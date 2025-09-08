@@ -150,10 +150,10 @@
                 
                 infoScreen.classList.replace('hidden', 'visible'); // 정보 화면 페이드 인
 
-                // ✨ 웹페이지일 경우 표시 시간 2초 추가
+                // ✨ 웹페이지일 경우 표시 시간 4초 추가
                 let currentDuration = config.infoItemDuration;
                 if (item.type === 'webpage') {
-                    currentDuration += 2000;
+                    currentDuration += 4000;
                 }
 
                 currentInfoIndex = (currentInfoIndex + 1) % config.infoContentList.length;
@@ -264,6 +264,7 @@
 </body>
 
 </html>
+
 
 
 
