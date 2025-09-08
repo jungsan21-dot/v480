@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>도담마루 도서관 정보 화면</title>
+    <style>
+        /* 기본 스타일 */
+        body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; font-family: 'Malgun Gothic', sans-serif; background-color: #000; }
+        .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transition: opacity 0.7s ease-in-out; }
+        .visible { opacity: 1; pointer-events: auto; }
+        .hidden { opacity: 0; pointer-events: none; }
+        #attendance-screen iframe { width: 100%; height: 100%; border: none; }
+
+        /* 정보 화면 스타일 */
+        #info-screen { display: flex; justify-content: center; align-items: center; text-align: center; background-color: #F5F5DC; color: #374151; }
+        #info-content { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
+        #info-content img { max-width: 90%; max-height: 90%; object-fit: contain; border-radius: 12px; }
+        #info-content p { font-weight: bold; padding: 2vw; margin: 0; }
+        #info-content iframe { width: 100%; height: 100%; border: none; }
+
+        /* 버튼 컨테이너 */
+        #button-container { position: absolute; bottom: 30px; right: 30px; display: flex; gap: 15px; z-index: 10; }
+        .control-btn { padding: 12px 24px; font-size: 1.2rem; font-weight: bold; background-color: rgba(255, 255, 255, 0.9); color: #111; border: none; border-radius: 50px; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); transition: transform 0.2s; }
+        .control-btn:hover { transform: scale(1.05); }
+
+        /* 관리 모달 스타일 */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; }
+        .modal-content { background-color: #fefefe; color: #333; padding: 25px; border-radius: 15px; width: 90%; max-width: 700px; box-shadow: 0 5px 20px rgba(0,0,0,0.25); max-height: 85vh; display: flex; flex-direction: column; }
+        .modal-content h2, .modal-content h3 { margin-top: 0; color: #111827; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; }
+        .modal-content .input-group { margin-bottom: 15px; }
+        .modal-content label { font-weight: bold; display: block; margin-bottom: 5px; }
+        .modal-content input, .modal-content select, .modal-content button, .modal-content textarea { width: 100%; padding: 10px; box-sizing: border-box; border-radius: 8px; border: 1px solid #ccc; font-size: 1rem; font-family: 'Malgun Gothic', sans-serif;}
+        .modal-buttons { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+        .modal-buttons button { width: auto; }
+        #info-item-list { overflow-y: auto; flex-grow: 1; border: 1px solid #ddd; padding: 10px; border-radius: 8px; min-height: 150px; }
+        .info-item { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 10px; padding: 10px; border-bottom: 1px solid #eee; }
+        .info-item .item-controls { display: flex; gap: 10px; width: 100%; }
+        .info-item select { width: 110px; }
+        .info-item .item-main-input { flex-grow: 1; }
+        .info-item .item-main-input textarea { min-height: 80px; resize: vertical; }
+        .info-item .text-options { display: flex; align-items: center; gap: 5px; width: 100%; margin-top: 5px; padding-left: 120px; }
+        .info-item .text-options label { font-size: 0.9em; }
+        .info-item .text-options input { width: 70px; }
+        .info-item .delete-item-btn { width: 40px; background-color: #ef4444; color: white; border: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div id="attendance-screen" class="screen visible"><iframe src="index.html"></iframe></div>
+    <div id="info-screen" class="screen hidden">
+        <div id="info-content"></div>
+        <div id="button-container">
+            <button id="manage-info-btn" class="control-btn">정보 화면 관리 ⚙️</button>
+            <button id="go-to-attendance-btn" class="control-btn">출석부 보기 ↩️</button>
+        </div>
+    </div>
+
+    <div id="admin-modal" class="modal">
+        <div class="modal-content">
+             <h2>정보 화면 설정</h2>
+            <h3>타이머 설정 (단위: 초)</h3>
+            <div class="input-group" style="display: flex; gap: 20px;">
+                <div style="flex: 1;"><label for="attendance-duration-input">출석부 표시 시간</label><input type="number" id="attendance-duration-input" min="1"></div>
+                <div style="flex: 1;"><label for="info-duration-input">정보 항목 표시 시간</label><input type="number" id="info-duration-input" min="1"></div>
+            </div>
+            
+            <h3>콘텐츠 목록</h3>
+            <div id="info-item-list"></div>
+            <button id="add-item-btn" style="background-color: #2563eb; color: white; margin: 15px 0;">+ 항목 추가</button>
+
+            <div class="modal-buttons">
+                <button id="modal-close-btn" style="background-color: #6b7280; color: white;">닫기</button>
+                <button id="modal-save-btn" style="background-color: #16a34a; color: white;">저장 후 새로고침</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const attendanceScreen = document.getElementById('attendance-screen');
+            const infoScreen = document.getElementById('info-screen');
+            const infoContent = document.getElementById('info-content');
+            const goToAttendanceBtn = document.getElementById('go-to-attendance-btn');
+            const manageInfoBtn = document.getElementById('manage-info-btn');
+
+            let config = {
+                attendanceDuration: 30000,
+                infoItemDuration: 10000,
+                infoContentList: [
+                    { type: 'webpage', value: 'https://www.miricanvas.com/v/151v5eu' },
+                    { type: 'text', value: '📚 책과 함께 성장하는\n도담마루 도서관', fontSize: '6' }
+                ]
+            };
+
+            let mainTimer = null;
+            let currentInfoIndex = 0;
+            const transitionDuration = 700; // CSS transition 시간과 일치
+
+            function loadDataFromStorage() {
+                const storedData = localStorage.getItem('libraryDisplayData');
+                if (storedData) {
+                    const parsedData = JSON.parse(storedData);
+                    config.attendanceDuration = parsedData.attendanceDuration || 30000;
+                    config.infoItemDuration = parsedData.infoItemDuration || 10000;
+                    if (parsedData.infoContentList && parsedData.infoContentList.length > 0) {
+                        config.infoContentList = parsedData.infoContentList;
+                    }
+                }
+            }
+            
+            // ✨ 화면 전환 로직 통합
+            function switchScreen(displayFunction) {
+                clearTimeout(mainTimer);
+                // 현재 보이는 화면을 숨김 (페이드 아웃 시작)
+                attendanceScreen.classList.replace('visible', 'hidden');
+                infoScreen.classList.replace('visible', 'hidden');
+                
+                // 페이드 아웃이 끝난 후, 다음 화면을 표시하는 함수 실행
+                setTimeout(displayFunction, transitionDuration);
+            }
+
+            // 출석부 화면을 표시하는 최종 함수
+            function displayAttendance() {
+                attendanceScreen.classList.replace('hidden', 'visible');
+                mainTimer = setTimeout(() => switchScreen(displayNextInfoItem), config.attendanceDuration);
+            }
+
+            // 정보 화면을 표시하는 최종 함수
+            function displayNextInfoItem() {
+                if (config.infoContentList.length === 0) {
+                    switchScreen(displayAttendance); return;
+                }
+
+                const item = config.infoContentList[currentInfoIndex];
+                
+                if (item.type === 'text') {
+                    const p = document.createElement('p');
+                    if (item.fontSize) { p.style.fontSize = `${item.fontSize}vw`; }
+                    p.innerHTML = item.value.replace(/\n/g, '<br>');
+                    infoContent.innerHTML = '';
+                    infoContent.appendChild(p);
+                } else if (item.type === 'image') {
+                    infoContent.innerHTML = `<img src="${item.value}" alt="정보 이미지">`;
+                } else if (item.type === 'webpage') {
+                    infoContent.innerHTML = `<iframe src="${item.value}"></iframe>`;
+                }
+                
+                infoScreen.classList.replace('hidden', 'visible'); // 정보 화면 페이드 인
+
+                // ✨ 웹페이지일 경우 표시 시간 2초 추가
+                let currentDuration = config.infoItemDuration;
+                if (item.type === 'webpage') {
+                    currentDuration += 2000;
+                }
+
+                currentInfoIndex = (currentInfoIndex + 1) % config.infoContentList.length;
+                const nextAction = (currentInfoIndex === 0) ? displayAttendance : displayNextInfoItem;
+                mainTimer = setTimeout(() => switchScreen(nextAction), currentDuration);
+            }
+
+            // --- 모달 관리 기능 (이전과 동일) ---
+            const modal = {
+                element: document.getElementById('admin-modal'),
+                attendanceDurationInput: document.getElementById('attendance-duration-input'),
+                infoDurationInput: document.getElementById('info-duration-input'),
+                itemList: document.getElementById('info-item-list'),
+                open: () => { clearTimeout(mainTimer); modal.render(); modal.element.style.display = 'flex'; },
+                close: () => { modal.element.style.display = 'none'; switchScreen(displayAttendance); },
+                render: () => {
+                    modal.attendanceDurationInput.value = config.attendanceDuration / 1000;
+                    modal.infoDurationInput.value = config.infoItemDuration / 1000;
+                    modal.itemList.innerHTML = '';
+                    config.infoContentList.forEach((item, index) => {
+                        modal.itemList.appendChild(modal.createItemElement(item, index));
+                    });
+                },
+                createItemElement: (item, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'info-item';
+                    const type = item.type;
+
+                    let mainInputHTML = '';
+                    if (type === 'text') {
+                        mainInputHTML = `<textarea placeholder="내용 입력... (줄바꿈 가능)">${item.value}</textarea>`;
+                    } else if (type === 'image') {
+                        mainInputHTML = `<input type="text" value="${item.value}" placeholder="이미지 주소 입력">`;
+                    } else if (type === 'webpage') {
+                        mainInputHTML = `<input type="text" value="${item.value}" placeholder="웹페이지 주소(URL) 입력">`;
+                    }
+                    
+                    div.innerHTML = `
+                        <div class="item-controls">
+                            <select class="item-type-select" data-index="${index}">
+                                <option value="text" ${type === 'text' ? 'selected' : ''}>텍스트</option>
+                                <option value="image" ${type === 'image' ? 'selected' : ''}>이미지</option>
+                                <option value="webpage" ${type === 'webpage' ? 'selected' : ''}>웹페이지</option>
+                            </select>
+                            <div class="item-main-input">${mainInputHTML}</div>
+                            <button class="delete-item-btn" data-index="${index}">X</button>
+                        </div>
+                        ${type === 'text' 
+                            ? `<div class="text-options">
+                                  <label>글자 크기(vw):</label>
+                                  <input type="number" class="font-size-input" value="${item.fontSize || ''}" min="1" max="20" step="0.5" placeholder="기본">
+                               </div>`
+                            : ''
+                        }
+                    `;
+                    return div;
+                },
+                addItem: () => { config.infoContentList.push({ type: 'text', value: '', fontSize: '' }); modal.render(); },
+                deleteItem: (index) => { config.infoContentList.splice(index, 1); modal.render(); },
+                save: () => {
+                    const newConfig = {
+                        attendanceDuration: parseInt(modal.attendanceDurationInput.value, 10) * 1000,
+                        infoItemDuration: parseInt(modal.infoDurationInput.value, 10) * 1000,
+                        infoContentList: []
+                    };
+                    const items = modal.itemList.querySelectorAll('.info-item');
+                    items.forEach(itemEl => {
+                        const type = itemEl.querySelector('.item-type-select').value;
+                        const value = itemEl.querySelector('.item-main-input > *').value.trim();
+                        if (value) {
+                            const newItem = { type, value };
+                            if (type === 'text') {
+                                newItem.fontSize = itemEl.querySelector('.font-size-input').value;
+                            }
+                            newConfig.infoContentList.push(newItem);
+                        }
+                    });
+                    localStorage.setItem('libraryDisplayData', JSON.stringify(newConfig));
+                    alert('설정이 저장되었습니다. 페이지를 새로고침합니다.');
+                    location.reload();
+                }
+            };
+            
+            // 이벤트 리스너 설정
+            manageInfoBtn.addEventListener('click', modal.open);
+            document.getElementById('modal-close-btn').addEventListener('click', modal.close);
+            document.getElementById('modal-save-btn').addEventListener('click', modal.save);
+            document.getElementById('add-item-btn').addEventListener('click', modal.addItem);
+            goToAttendanceBtn.addEventListener('click', () => switchScreen(displayAttendance));
+            modal.itemList.addEventListener('change', (e) => {
+                if (e.target.classList.contains('item-type-select')) {
+                    const index = parseInt(e.target.dataset.index, 10);
+                    config.infoContentList[index].type = e.target.value;
+                    modal.render();
+                }
+            });
+            modal.itemList.addEventListener('click', (e) => {
+                if (e.target.classList.contains('delete-item-btn')) {
+                    modal.deleteItem(parseInt(e.target.dataset.index, 10));
+                }
+            });
+
+            // 프로그램 시작
+            loadDataFromStorage();
+            switchScreen(displayAttendance); // 첫 시작
+        });
+    </script>
+</body>
+</html>

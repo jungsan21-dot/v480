@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>뽑기</title>
+    <style>
+        @import url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_four@1.2/JalnanGothic.woff');
+        body { font-family: 'JalnanGothic', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; margin: 0; background-color: #f0f4f8; overflow: hidden }
+        .gacha-container { text-align: center; background: #fff; padding: 2vh 2vw; border-radius: 20px; width: 100%; height: 100%; box-sizing: border-box; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; align-items: center }
+        h1 { color: #d9534f; font-size: clamp(2em, 5vh, 3em); margin: 2vh 0 }
+        .gacha-machine { width: 80%; max-width: 300px; height: 45vh; max-height: 400px; background-image: url(https://i.pinimg.com/1200x/ea/8f/81/ea8f81f6ae8d02a0f1731b93e9ffaad7.jpg); background-size: contain; background-repeat: no-repeat; background-position: center; margin: 1vh auto }
+        .gacha-button { padding: 2vh 4vw; font-size: clamp(1em, 3vh, 1.5em); font-weight: 700; color: #fff; background-color: #5cb85c; border: none; border-radius: 12px; cursor: pointer; transition: all .2s; box-shadow: 0 4px 6px rgba(0, 0, 0, .1); margin: 1vh 0 }
+        #edit-prizes-button { background-color: #f0ad4e }
+        #gacha-ball { position: absolute; left: 50%; transform: translateX(-50%); width: clamp(150px, 30vh, 250px); height: clamp(150px, 30vh, 250px); border-radius: 50%; box-shadow: 0 4px 8px rgba(0, 0, 0, .2); display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; font-size: clamp(1em, 2.5vh, 1.2em); font-weight: 700; color: #fff; padding: 10px; box-sizing: border-box; cursor: pointer }
+        @keyframes fall-and-reveal { 0% { top: 20%; transform: translateX(-50%) scale(.5); opacity: 0 } 100% { top: 65%; transform: translateX(-50%) scale(1); opacity: 1 } }
+        .animate-ball { animation: fall-and-reveal 5s forwards }
+        #edit-prizes-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, .6); z-index: 2000; justify-content: center; align-items: center }
+        #edit-prizes-modal .modal-content { background: #fff; padding: 20px; border-radius: 10px; width: 90%; max-width: 600px; text-align: left; max-height: 80vh; display: flex; flex-direction: column }
+        #edit-prizes-modal h2 { margin-top: 0 }
+        #prize-list { overflow-y: auto; flex-grow: 1; padding-right: 10px; border: 1px solid #ccc; border-radius: 5px; margin: 10px 0 }
+        .prize-item { display: flex; gap: 10px; align-items: center; margin-bottom: 10px }
+        .prize-item input { padding: 8px; border: 1px solid #ccc; border-radius: 5px; font-size: 16px }
+        .prize-item input[type=text] { flex-grow: 1 }
+        .prize-item input[type=number] { width: 80px }
+        .delete-prize-btn { background-color: #e53e3e; color: #fff; border: none; border-radius: 50%; width: 30px; height: 30px; font-weight: 700; cursor: pointer }
+        .modal-buttons { margin-top: 10px; display: flex; justify-content: flex-end; gap: 10px }
+        .modal-buttons button { padding: 10px 20px; border-radius: 5px; border: none; color: #fff; cursor: pointer }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/tone@14.7.58/build/Tone.js"></script>
+</head>
+<body>
+    <div class="gacha-container">
+        <h1>꽝 없는 뽑기 기계</h1>
+        <div class="gacha-machine"></div>
+        <div>
+            <button id="gacha-button" class="gacha-button">뽑기!</button>
+            <button id="edit-prizes-button" class="gacha-button">선물 편집</button>
+        </div>
+        <div id="gacha-ball"></div>
+    </div>
+    <div id="edit-prizes-modal">
+        <div class="modal-content">
+            <h2>선물 목록 편집</h2>
+            <div id="prize-list"></div>
+            <div class="modal-buttons">
+                <button id="add-prize-button" style="background-color:#3182ce">선물 추가</button>
+                <button id="save-prizes-button" style="background-color:#5cb85c">저장</button>
+                <button id="close-prizes-modal-button" style="background-color:#aaa">닫기</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        let items = [];
+        const defaultItems = [{ name: '멋진 상품', quantity: 1 }, { name: '상품권', quantity: 2 }, { name: '할인쿠폰', quantity: 3 }, { name: '작은 선물', quantity: 5 }, { name: '커피 쿠폰', quantity: 5 }, { name: '사탕', quantity: 10 }];
+        const ballColors = ['#ff6347', '#ffb6c1', '#add8e6', '#90ee90', '#ffa07a', '#c0c0c0', '#d8bfd8', '#f0e68c'];
+        const synth = new Tone.NoiseSynth({ noise: { type: "brown" }, envelope: { attack: .02, decay: .2, sustain: .05 } }).toDestination();
+        const ball = document.getElementById('gacha-ball'),
+            button = document.getElementById('gacha-button'),
+            editPrizesModal = document.getElementById('edit-prizes-modal'),
+            prizeList = document.getElementById('prize-list');
+        let isAnimating = !1;
+
+        function loadItems() {
+            const savedItems = localStorage.getItem('gachaItems');
+            items = savedItems ? JSON.parse(savedItems) : [...defaultItems]
+        }
+
+        function saveItems() { localStorage.setItem('gachaItems', JSON.stringify(items)) }
+
+        function checkGachaAvailability() {
+            const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
+            button.disabled = totalQuantity === 0;
+            if (totalQuantity === 0) button.textContent = '선물 없음'
+        }
+        async function drawItem() {
+            if (isAnimating || items.reduce((sum, item) => sum + item.quantity, 0) === 0) return;
+            isAnimating = !0;
+            await Tone.start();
+            const prizePool = [];
+            items.forEach(item => { for (let i = 0; i < item.quantity; i++) { prizePool.push(item.name) } });
+            if (prizePool.length === 0) return;
+            ball.style.backgroundColor = ballColors[Math.floor(Math.random() * ballColors.length)];
+            ball.style.display = 'flex';
+            ball.innerText = '';
+            synth.triggerAttackRelease("3s");
+            ball.classList.remove('animate-ball');
+            void ball.offsetWidth;
+            ball.classList.add('animate-ball');
+            button.disabled = !0;
+            setTimeout(() => {
+                const selectedItemName = prizePool[Math.floor(Math.random() * prizePool.length)];
+                const selectedItem = items.find(item => item.name === selectedItemName);
+                if (selectedItem) {
+                    selectedItem.quantity--;
+                    saveItems()
+                }
+                ball.innerText = `🎉 축하합니다! ${selectedItemName} 당첨! 🎉`;
+                button.disabled = !1;
+                isAnimating = !1;
+                checkGachaAvailability()
+            }, 5e3)
+        }
+
+        function renderPrizeEditor() {
+            prizeList.innerHTML = '';
+            items.forEach((item, index) => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'prize-item';
+                itemDiv.innerHTML = `<input type="text" value="${item.name}" placeholder="선물 이름"><input type="number" value="${item.quantity}" min="0" placeholder="수량"><button class="delete-prize-btn" data-index="${index}">X</button>`;
+                prizeList.appendChild(itemDiv)
+            });
+            document.querySelectorAll('.delete-prize-btn').forEach(btn => btn.onclick = e => {
+                items.splice(e.target.dataset.index, 1);
+                renderPrizeEditor()
+            })
+        }
+        document.getElementById('edit-prizes-button').addEventListener('click', () => {
+            renderPrizeEditor();
+            editPrizesModal.style.display = 'flex'
+        });
+        document.getElementById('add-prize-button').addEventListener('click', () => {
+            items.push({ name: '', quantity: 1 });
+            renderPrizeEditor()
+        });
+        document.getElementById('save-prizes-button').addEventListener('click', () => {
+            const newItems = [];
+            const itemElements = prizeList.querySelectorAll('.prize-item');
+            itemElements.forEach(el => {
+                const name = el.querySelector('input[type=text]').value.trim();
+                const quantity = parseInt(el.querySelector('input[type=number]').value, 10);
+                if (name && !isNaN(quantity)) { newItems.push({ name, quantity }) }
+            });
+            if (newItems.length > 0) {
+                items = newItems;
+                saveItems();
+                alert('선물 목록이 저장되었습니다!');
+                editPrizesModal.style.display = 'none';
+                checkGachaAvailability()
+            } else { alert('유효한 선물이 하나 이상 있어야 합니다.') }
+        });
+        document.getElementById('close-prizes-modal-button').addEventListener('click', () => { editPrizesModal.style.display = 'none' });
+        button.addEventListener('click', drawItem);
+        ball.addEventListener('click', () => { if (!isAnimating) ball.style.display = 'none' });
+        loadItems();
+        checkGachaAvailability();
+    </script>
+</body>
+</html>

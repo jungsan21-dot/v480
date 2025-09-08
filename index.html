@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>도담마루 도서관 월 출석부</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="top-display-container">
+        <div id="date-display-section" class="display-view display-visible">
+            <div class="date-box loan-date">
+                <h2>도서 대출일</h2>
+                <div id="loan-date-container" class="date-content"></div>
+            </div>
+            <div class="date-box return-date">
+                <h2>도서 반납일</h2>
+                <div id="return-date-container" class="date-content"></div>
+            </div>
+        </div>
+        <div id="time-display-section" class="display-view display-hidden">
+            </div>
+    </div>
+
+    <div class="container">
+        <header>
+            <h1 id="main-title"></h1>
+            <div class="header-controls">
+                <span id="wake-lock-status" title="화면 꺼짐 방지 활성화" style="display: none;">☀️</span>
+                <span id="version-display"></span>
+                <div id="manual-mode-all-controls" style="display: none; align-items: center; gap: 10px;">
+                    <span class="label">전체 출석일 조정</span>
+                    <button id="all-minus-button" class="header-btn" style="background-color: #dc3545;">-1</button>
+                    <button id="all-plus-button" class="header-btn" style="background-color: #28a745;">+1</button>
+                </div>
+                <button id="add-student-button-header" class="header-btn" style="display: none; background-color: #2563eb;">학생 추가 +</button>
+                <button id="manual-mode-button" class="header-btn">출석 수동조정</button>
+                <button id="student-manage-button" class="header-btn">학생 관리</button>
+                <button id="gacha-unlimited-button" class="header-btn">꽝없는뽑기기계</button>
+                <button id="admin-button" class="header-btn">관리자 모드</button>
+                <button id="exit-mode-button" class="header-btn" style="display: none;">나가기</button>
+            </div>
+        </header>
+
+        <div id="chart-container"></div>
+    </div>
+
+    <div id="admin-code-modal" class="modal">
+        <div class="modal-content">
+            <h2 id="admin-code-title">관리자 코드 입력</h2>
+            <input type="password" id="admin-code-input" placeholder="****" maxlength="4">
+            <div style="display:flex; gap:10px;">
+                <button id="admin-code-confirm" class="modal-save-button">확인</button>
+                <button id="admin-code-cancel" class="modal-close-button">취소</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="add-student-modal" class="modal">
+        <div class="modal-content">
+            <h2>새 학생 추가</h2>
+            <label for="new-student-name-input-modal">학생 이름:</label>
+            <input type="text" id="new-student-name-input-modal" placeholder="이름을 입력하세요">
+            <div style="display:flex; gap:10px; margin-top: 10px;">
+                <button id="add-student-confirm-button" class="modal-save-button">추가</button>
+                <button id="add-student-cancel-button" class="modal-close-button">취소</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="admin-modal" class="modal">
+        <div class="modal-content" style="max-height: 90vh; overflow-y: auto;">
+            <h2>관리자 설정</h2>
+            <h3>보상 관리</h3>
+            <label for="student-select-reward">학생 선택:</label>
+            <select id="student-select-reward"></select>
+            <div style="display:flex; gap:10px;">
+                <button id="reset-gift-13-button" style="background-color:#fd7e14;">13일 선물 초기화</button>
+                <button id="reset-gift-18-button" style="background-color:#fd7e14;">18일 선물 초기화</button>
+            </div>
+            <h3>알람 관리</h3>
+            <label for="alarm-time-1">알람 1 시간:</label>
+            <input type="time" id="alarm-time-1">
+            <label for="alarm-time-2">알람 2 시간:</label>
+            <input type="time" id="alarm-time-2">
+            <button id="save-alarm-times-button" style="background-color:#0d9488;">알람 시간 저장</button>
+            <h3>디자인 설정</h3>
+            <label for="font-size-slider">학생 이름 크기: <span id="font-size-value">2.2em</span></label>
+            <input type="range" id="font-size-slider" min="1.5" max="3.5" step="0.1" value="2.2">
+            <label for="top-display-height-slider">상단 정보창 높이: <span id="top-display-height-value">28vh</span></label>
+            <input type="range" id="top-display-height-slider" min="15" max="40" step="1" value="28">
+            <button id="save-design-button" style="background-color:#3b82f6;">디자인 저장</button>
+            <h3>데이터 관리</h3>
+            <div style="display:flex; gap:10px; margin-top: 10px;">
+                <button id="export-data-button" style="background-color:#6c757d;">데이터 내보내기</button>
+                <button id="import-data-button" style="background-color:#6c757d;">데이터 불러오기</button>
+                <input type="file" id="import-file-input" accept=".json" style="display:none;">
+            </div>
+             <button id="full-reset-button" style="background-color:#c81e1e; margin-top: 10px;">전체 데이터 초기화 (매 월 초 누르세요)</button>
+            <button id="modal-close-button" class="modal-close-button" style="margin-top: 20px;">닫기</button>
+        </div>
+    </div>
+
+    <div id="gacha-modal" class="modal">
+        <div class="modal-content">
+            <button id="gacha-modal-close-button">&times;</button>
+            <iframe id="gacha-iframe"></iframe>
+        </div>
+    </div>
+    
+    <script src="js/data.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
