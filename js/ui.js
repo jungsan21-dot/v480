@@ -183,6 +183,7 @@ function updateTimeDisplay() {
 }
     
     function openGachaModal() {
+        notifyParent('pauseTimer'); // ✨ 가챠 모달 열 때 타이머 중지
         DOMElements.gachaIframe.src = 'gacha.html';
         DOMElements.gachaModal.style.display = 'flex';
     }
@@ -201,4 +202,5 @@ function updateTimeDisplay() {
     }
 
     return { DOMElements, applyDesignSettings, renderStudents, renderDateDisplay, updateTimeDisplay, openGachaModal, getDragAfterElement };
+
 })();
