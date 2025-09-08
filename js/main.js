@@ -1,3 +1,10 @@
+// ✨ 부모 창(display.html)에 메시지를 보내는 함수
+function notifyParent(message) {
+    // 현재 창이 iframe 안에 있을 경우에만 메시지를 보냄
+    if (window.self !== window.top) {
+        window.parent.postMessage(message, '*');
+    }
+}
 document.addEventListener('DOMContentLoaded', () => {
     const Data = App.Data;
     const UI = App.UI;
@@ -185,87 +192,94 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function setupEventListeners() {
-        const adminCodeModal = document.getElementById('admin-code-modal');
-        const adminCodeInput = document.getElementById('admin-code-input');
-        const adminCodeTitle = document.getElementById('admin-code-title');
-        let currentAdminAction = null;
-    
-        const openCodeModal = (action, title) => {
-            currentAdminAction = action;
-            adminCodeTitle.textContent = title;
+    const adminCodeModal = document.getElementById('admin-code-modal');
+    const adminCodeInput = document.getElementById('admin-code-input');
+    const adminCodeTitle = document.getElementById('admin-code-title');
+    let currentAdminAction = null;
+
+    const openCodeModal = (action, title) => {
+        notifyParent('pauseTimer'); // ✨ 타이머 중지 신호 보내기
+        currentAdminAction = action;
+        adminCodeTitle.textContent = title;
+        adminCodeInput.value = '';
+        adminCodeModal.style.display = 'flex';
+        adminCodeInput.focus();
+    };
+
+    document.getElementById('admin-button').onclick = () => openCodeModal('admin', '관리자 코드 입력');
+    document.getElementById('manual-mode-button').onclick = () => openCodeModal('manual', '수동 조정 코드 입력');
+    document.getElementById('gacha-unlimited-button').onclick = () => openCodeModal('gacha', '뽑기 기계 코드 입력');
+    document.getElementById('student-manage-button').onclick = () => openCodeModal('student-manage', '학생 관리 코드 입력');
+
+    document.getElementById('admin-code-cancel').onclick = () => {
+        adminCodeModal.style.display = 'none';
+        notifyParent('resumeTimer'); // ✨ 타이머 재개 신호 보내기
+    };
+    document.getElementById('admin-code-confirm').onclick = () => {
+        if (adminCodeInput.value === '6408') {
+            adminCodeModal.style.display = 'none';
+            // 확인 버튼을 누르면 다른 모달이 열리므로, 여기서는 resume 신호를 보내지 않음
+            if (currentAdminAction === 'admin') openAdminModal();
+            else if (currentAdminAction === 'manual') enterManualMode();
+            else if (currentAdminAction === 'gacha') UI.openGachaModal();
+            else if (currentAdminAction === 'student-manage') enterStudentManageMode();
+        } else {
+            alert('코드가 일치하지 않습니다.');
             adminCodeInput.value = '';
-            adminCodeModal.style.display = 'flex';
-            adminCodeInput.focus();
-        };
-    
-        document.getElementById('admin-button').onclick = () => openCodeModal('admin', '관리자 코드 입력');
-        document.getElementById('manual-mode-button').onclick = () => openCodeModal('manual', '수동 조정 코드 입력');
-        document.getElementById('gacha-unlimited-button').onclick = () => openCodeModal('gacha', '뽑기 기계 코드 입력');
-        document.getElementById('student-manage-button').onclick = () => openCodeModal('student-manage', '학생 관리 코드 입력');
-    
-        document.getElementById('admin-code-cancel').onclick = () => adminCodeModal.style.display = 'none';
-        document.getElementById('admin-code-confirm').onclick = () => {
-            if (adminCodeInput.value === '6408') {
-                adminCodeModal.style.display = 'none';
-                if (currentAdminAction === 'admin') openAdminModal();
-                else if (currentAdminAction === 'manual') enterManualMode();
-                else if (currentAdminAction === 'gacha') UI.openGachaModal();
-                else if (currentAdminAction === 'student-manage') enterStudentManageMode();
-            } else {
-                alert('코드가 일치하지 않습니다.');
-                adminCodeInput.value = '';
-            }
-        };
-        
-        document.getElementById('exit-mode-button').onclick = () => {
-            isManualModeActive = false;
-            isStudentManageModeActive = false;
-            document.getElementById('admin-button').style.display = 'inline-block';
-            document.getElementById('manual-mode-button').style.display = 'inline-block';
-            document.getElementById('gacha-unlimited-button').style.display = 'inline-block';
-            document.getElementById('student-manage-button').style.display = 'inline-block';
-            document.getElementById('exit-mode-button').style.display = 'none';
-            document.getElementById('manual-mode-all-controls').style.display = 'none';
-            document.getElementById('add-student-button-header').style.display = 'none';
-            renderApp();
-        };
+        }
+    };
 
-        document.getElementById('add-student-button-header').onclick = () => {
-            const newName = prompt('추가할 학생의 이름을 입력하세요:');
-            // ✨ 수정
-            if (newName && newName.trim() !== '' && !Data.state.initialStudentNames.includes(newName.trim())) {
-                const newStudent = { name: newName.trim(), attendanceCount: 0, lastCheckInDate: null, usedGachas: [] };
-                Data.state.studentData.push(newStudent);
-                Data.state.initialStudentNames.push(newName.trim());
-                Data.saveData();
-                renderApp();
-            } else if (newName) {
-                alert('이름을 입력하지 않았거나 이미 존재하는 이름입니다.');
-            }
-        };
+    document.getElementById('exit-mode-button').onclick = () => {
+        isManualModeActive = false;
+        isStudentManageModeActive = false;
+        document.getElementById('admin-button').style.display = 'inline-block';
+        document.getElementById('manual-mode-button').style.display = 'inline-block';
+        document.getElementById('gacha-unlimited-button').style.display = 'inline-block';
+        document.getElementById('student-manage-button').style.display = 'inline-block';
+        document.getElementById('exit-mode-button').style.display = 'none';
+        document.getElementById('manual-mode-all-controls').style.display = 'none';
+        document.getElementById('add-student-button-header').style.display = 'none';
+        renderApp();
+        notifyParent('resumeTimer'); // ✨ 모드에서 나갈 때 타이머 재개
+    };
 
-        document.getElementById('all-plus-button').onclick = () => {
-            // ✨ 수정
-            Data.state.studentData.forEach(s => s.attendanceCount++);
+    document.getElementById('add-student-button-header').onclick = () => {
+        const newName = prompt('추가할 학생의 이름을 입력하세요:');
+        if (newName && newName.trim() !== '' && !Data.state.initialStudentNames.includes(newName.trim())) {
+            const newStudent = { name: newName.trim(), attendanceCount: 0, lastCheckInDate: null, usedGachas: [] };
+            Data.state.studentData.push(newStudent);
+            Data.state.initialStudentNames.push(newName.trim());
             Data.saveData();
             renderApp();
-        };
-        document.getElementById('all-minus-button').onclick = () => {
-            // ✨ 수정
-            Data.state.studentData.forEach(s => { if (s.attendanceCount > 0) s.attendanceCount--; });
-            Data.saveData();
-            renderApp();
-        };
+        } else if (newName) {
+            alert('이름을 입력하지 않았거나 이미 존재하는 이름입니다.');
+        }
+    };
 
-        document.getElementById('gacha-modal-close-button').onclick = () => {
-            document.getElementById('gacha-iframe').src = '';
-            document.getElementById('gacha-modal').style.display = 'none';
-        };
-    }
+    document.getElementById('all-plus-button').onclick = () => {
+        Data.state.studentData.forEach(s => s.attendanceCount++);
+        Data.saveData();
+        renderApp();
+    };
+    document.getElementById('all-minus-button').onclick = () => {
+        Data.state.studentData.forEach(s => { if (s.attendanceCount > 0) s.attendanceCount--; });
+        Data.saveData();
+        renderApp();
+    };
 
+    document.getElementById('gacha-modal-close-button').onclick = () => {
+        document.getElementById('gacha-iframe').src = '';
+        document.getElementById('gacha-modal').style.display = 'none';
+        notifyParent('resumeTimer'); // ✨ 가챠 모달 닫을 때 타이머 재개
+    };
+}
+    
     function setupAdminModalListeners() {
         const adminModal = document.getElementById('admin-modal');
-        document.getElementById('modal-close-button').onclick = () => adminModal.style.display = 'none';
+        document.getElementById('modal-close-button').onclick = () => {
+    adminModal.style.display = 'none';
+    notifyParent('resumeTimer'); // ✨ 관리자 모달 닫을 때 타이머 재개
+};
         
         const resetGift = (day) => {
             const studentIndex = parseInt(document.getElementById('student-select-reward').value);
@@ -364,4 +378,5 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     init();
+
 });
