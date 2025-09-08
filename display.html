@@ -75,7 +75,7 @@
             </div>
         </div>
     </div>
-
+    
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const attendanceScreen = document.getElementById('attendance-screen');
@@ -85,19 +85,34 @@
             const manageInfoBtn = document.getElementById('manage-info-btn');
 
             let config = {
-                attendanceDuration: 15000,
-                infoItemDuration: 5000,
+                attendanceDuration: 30000,
+                infoItemDuration: 10000,
                 infoContentList: [
                     { type: 'webpage', value: 'https://www.miricanvas.com/v/151v5eu' },
-                    { type: 'image', value: 'https://www.kpipa.or.kr/p/data/editor/2509/thumb-7f656f326994ae586ed7c8fc575785f7_1756688610_5275_600x826.jpg' },
-                    { type: 'image', value: 'images/9.jpg' },
                     { type: 'text', value: '📚 책과 함께 성장하는\n도담마루 도서관', fontSize: '6' }
                 ]
             };
 
             let mainTimer = null;
             let currentInfoIndex = 0;
-            const transitionDuration = 700; // CSS transition 시간과 일치
+            const transitionDuration = 700;
+            let isPausedByIframe = false; // ✨ iframe 상호작용으로 타이머가 멈췄는지 확인하는 변수
+
+            // --- ✨ iframe으로부터 메시지를 수신하는 리스너 ---
+            window.addEventListener('message', (event) => {
+                if (event.data === 'pauseTimer') {
+                    console.log('iframe으로부터 타이머 중지 요청 받음');
+                    clearTimeout(mainTimer);
+                    isPausedByIframe = true;
+                } else if (event.data === 'resumeTimer') {
+                    console.log('iframe으로부터 타이머 재개 요청 받음');
+                    if (isPausedByIframe) {
+                        isPausedByIframe = false;
+                        // 상호작용이 끝났으므로 출석부 화면부터 다시 시작
+                        switchScreen(displayAttendance);
+                    }
+                }
+            });
 
             function loadDataFromStorage() {
                 const storedData = localStorage.getItem('libraryDisplayData');
@@ -111,31 +126,27 @@
                 }
             }
             
-            // ✨ 화면 전환 로직 통합
             function switchScreen(displayFunction) {
                 clearTimeout(mainTimer);
-                // 현재 보이는 화면을 숨김 (페이드 아웃 시작)
                 attendanceScreen.classList.replace('visible', 'hidden');
                 infoScreen.classList.replace('visible', 'hidden');
-                
-                // 페이드 아웃이 끝난 후, 다음 화면을 표시하는 함수 실행
                 setTimeout(displayFunction, transitionDuration);
             }
 
-            // 출석부 화면을 표시하는 최종 함수
             function displayAttendance() {
                 attendanceScreen.classList.replace('hidden', 'visible');
-                mainTimer = setTimeout(() => switchScreen(displayNextInfoItem), config.attendanceDuration);
+                // ✨ iframe이 일시정지 상태가 아닐 때만 다음 타이머를 설정
+                if (!isPausedByIframe) {
+                    mainTimer = setTimeout(() => switchScreen(displayNextInfoItem), config.attendanceDuration);
+                }
             }
 
-            // 정보 화면을 표시하는 최종 함수
             function displayNextInfoItem() {
+                if (isPausedByIframe) return; // ✨ 일시정지 상태면 전환하지 않음
                 if (config.infoContentList.length === 0) {
                     switchScreen(displayAttendance); return;
                 }
-
                 const item = config.infoContentList[currentInfoIndex];
-                
                 if (item.type === 'text') {
                     const p = document.createElement('p');
                     if (item.fontSize) { p.style.fontSize = `${item.fontSize}vw`; }
@@ -147,15 +158,11 @@
                 } else if (item.type === 'webpage') {
                     infoContent.innerHTML = `<iframe src="${item.value}"></iframe>`;
                 }
-                
-                infoScreen.classList.replace('hidden', 'visible'); // 정보 화면 페이드 인
-
-                // ✨ 웹페이지일 경우 표시 시간 4초 추가
+                infoScreen.classList.replace('hidden', 'visible');
                 let currentDuration = config.infoItemDuration;
                 if (item.type === 'webpage') {
-                    currentDuration += 4000;
+                    currentDuration += 2000;
                 }
-
                 currentInfoIndex = (currentInfoIndex + 1) % config.infoContentList.length;
                 const nextAction = (currentInfoIndex === 0) ? displayAttendance : displayNextInfoItem;
                 mainTimer = setTimeout(() => switchScreen(nextAction), currentDuration);
@@ -181,7 +188,6 @@
                     const div = document.createElement('div');
                     div.className = 'info-item';
                     const type = item.type;
-
                     let mainInputHTML = '';
                     if (type === 'text') {
                         mainInputHTML = `<textarea placeholder="내용 입력... (줄바꿈 가능)">${item.value}</textarea>`;
@@ -190,7 +196,6 @@
                     } else if (type === 'webpage') {
                         mainInputHTML = `<input type="text" value="${item.value}" placeholder="웹페이지 주소(URL) 입력">`;
                     }
-                    
                     div.innerHTML = `
                         <div class="item-controls">
                             <select class="item-type-select" data-index="${index}">
@@ -201,13 +206,7 @@
                             <div class="item-main-input">${mainInputHTML}</div>
                             <button class="delete-item-btn" data-index="${index}">X</button>
                         </div>
-                        ${type === 'text' 
-                            ? `<div class="text-options">
-                                  <label>글자 크기(vw):</label>
-                                  <input type="number" class="font-size-input" value="${item.fontSize || ''}" min="1" max="20" step="0.5" placeholder="기본">
-                               </div>`
-                            : ''
-                        }
+                        ${type === 'text' ? `<div class="text-options"><label>글자 크기(vw):</label><input type="number" class="font-size-input" value="${item.fontSize || ''}" min="1" max="20" step="0.5" placeholder="기본"></div>` : ''}
                     `;
                     return div;
                 },
@@ -237,7 +236,6 @@
                 }
             };
             
-            // 이벤트 리스너 설정
             manageInfoBtn.addEventListener('click', modal.open);
             document.getElementById('modal-close-btn').addEventListener('click', modal.close);
             document.getElementById('modal-save-btn').addEventListener('click', modal.save);
@@ -256,14 +254,15 @@
                 }
             });
 
-            // 프로그램 시작
             loadDataFromStorage();
-            switchScreen(displayAttendance); // 첫 시작
+            switchScreen(displayAttendance);
         });
     </script>
+
 </body>
 
 </html>
+
 
 
 
