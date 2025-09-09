@@ -3,28 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>도담마루 도서관 출석부_화면전환v.4.8.1</title>
+    <title>도담마루 도서관 출석부_화면전환v.4.8.2</title>
     <style>
-        /* 기본 스타일 */
+        /* CSS는 이전과 동일합니다 */
         body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; font-family: 'Malgun Gothic', sans-serif; background-color: #000; }
         .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transition: opacity 0.7s ease-in-out; }
         .visible { opacity: 1; pointer-events: auto; }
         .hidden { opacity: 0; pointer-events: none; }
         #attendance-screen iframe { width: 100%; height: 100%; border: none; }
-
-        /* 정보 화면 스타일 */
         #info-screen { display: flex; justify-content: center; align-items: center; text-align: center; background-color: #F5F5DC; color: #374151; }
         #info-content { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
         #info-content img { max-width: 100%; max-height: 100%; object-fit: cover; border-radius: 12px; }
         #info-content p { font-weight: bold; padding: 2vw; margin: 0; }
         #info-content iframe { width: 100%; height: 100%; border: none; }
-
-        /* 버튼 컨테이너 */
         #button-container { position: absolute; bottom: 30px; right: 30px; display: flex; gap: 15px; z-index: 10; }
         .control-btn { padding: 12px 24px; font-size: 1.2rem; font-weight: bold; background-color: rgba(255, 255, 255, 0.9); color: #111; border: none; border-radius: 50px; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); transition: transform 0.2s; }
         .control-btn:hover { transform: scale(1.05); }
-
-        /* 관리 모달 스타일 */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; }
         .modal-content { background-color: #fefefe; color: #333; padding: 25px; border-radius: 15px; width: 90%; max-width: 700px; box-shadow: 0 5px 20px rgba(0,0,0,0.25); max-height: 85vh; display: flex; flex-direction: column; }
         .modal-content h2, .modal-content h3 { margin-top: 0; color: #111827; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; }
@@ -60,28 +54,25 @@
         <div class="modal-content">
              <h2>정보 화면 설정</h2>
             <h3>타이머 설정 (단위: 초)</h3>
-            <div class="input-group" style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
-                <input type="checkbox" id="auto-image-toggle" style="width: auto;">
-                <label for="auto-image-toggle" style="margin-bottom: 0;">'images' 폴더 내 모든 이미지 자동 표시</label>
-            </div>
             <div class="input-group" style="display: flex; gap: 20px;">
                 <div style="flex: 1;"><label for="attendance-duration-input">출석부 표시 시간</label><input type="number" id="attendance-duration-input" min="1"></div>
                 <div style="flex: 1;"><label for="info-duration-input">정보 항목 표시 시간</label><input type="number" id="info-duration-input" min="1"></div>
             </div>
             
             <h3>콘텐츠 목록</h3>
+            <button id="fetch-images-btn" style="background-color: #f59e0b; color: white; margin-bottom: 15px;">GitHub에서 이미지 목록 새로고침 🔄</button>
             <div id="info-item-list"></div>
             <button id="add-item-btn" style="background-color: #2563eb; color: white; margin: 15px 0;">+ 항목 추가</button>
 
             <div class="modal-buttons">
                 <button id="modal-close-btn" style="background-color: #6b7280; color: white;">닫기</button>
-                <button id="modal-save-btn" style="background-color: #16a34a; color: white;">저장 후 새로고침</button>
+                <button id="modal-save-btn" style="background-color: #16a34a; color: white;">저장</button>
             </div>
         </div>
     </div>
     
     <script>
-        document.addEventListener('DOMContentLoaded', async () => { 
+        document.addEventListener('DOMContentLoaded', () => { 
             const attendanceScreen = document.getElementById('attendance-screen');
             const infoScreen = document.getElementById('info-screen');
             const infoContent = document.getElementById('info-content');
@@ -91,11 +82,9 @@
             let config = {
                 attendanceDuration: 30000,
                 infoItemDuration: 10000,
-                infoContentList: [], // ✨ 초기 목록은 비워둠
-                manualContentList: [ // ✨ 수동 목록을 별도로 관리
-                    { type: 'text', value: '📚 수동으로 추가한 콘텐츠 예시입니다.', fontSize: '5' }
-                ],
-                autoPlayImages: true
+                infoContentList: [
+                    { type: 'text', value: '📚 콘텐츠 예시입니다. 관리 메뉴에서 수정하세요.', fontSize: '5' }
+                ]
             };
 
             let mainTimer = null;
@@ -115,36 +104,14 @@
                 }
             });
 
-            async function fetchImagesFromRepo() {
-                const user = 'jungsan21-dot';
-                const repo = 'v480';
-                const path = 'images';
-                const apiUrl = `https://api.github.com/repos/${user}/${repo}/contents/${path}`;
-
-                try {
-                    const response = await fetch(apiUrl);
-                    if (!response.ok) throw new Error('GitHub API 로드 실패');
-                    const files = await response.json();
-                    return files
-                        .filter(file => /\.(jpe?g|png|gif)$/i.test(file.name))
-                        .map(file => ({ type: 'image', value: file.download_url }));
-                } catch (error) {
-                    console.error(error);
-                    return [];
-                }
-            }
-            
-            // ✨ 데이터 로딩 로직 수정
             function loadDataFromStorage() {
                 const storedData = localStorage.getItem('libraryDisplayData');
                 if (storedData) {
                     const parsedData = JSON.parse(storedData);
                     config.attendanceDuration = parsedData.attendanceDuration || 30000;
                     config.infoItemDuration = parsedData.infoItemDuration || 10000;
-                    config.autoPlayImages = parsedData.autoPlayImages !== false;
-                    // 수동 목록만 불러와서 저장
-                    if (parsedData.manualContentList) {
-                        config.manualContentList = parsedData.manualContentList;
+                    if (parsedData.infoContentList) {
+                        config.infoContentList = parsedData.infoContentList;
                     }
                 }
             }
@@ -165,7 +132,6 @@
 
             function displayNextInfoItem() {
                 if (isPausedByIframe) return;
-                // ✨ 최종 콘텐츠 목록(infoContentList)을 사용
                 if (config.infoContentList.length === 0) {
                     switchScreen(displayAttendance); return;
                 }
@@ -187,23 +153,29 @@
                 const nextAction = (currentInfoIndex === 0) ? displayAttendance : displayNextInfoItem;
                 mainTimer = setTimeout(() => switchScreen(nextAction), currentDuration);
             }
-
+            
             // ✨ 모달 로직 전체 수정
             const modal = {
                 element: document.getElementById('admin-modal'),
                 attendanceDurationInput: document.getElementById('attendance-duration-input'),
                 infoDurationInput: document.getElementById('info-duration-input'),
-                autoImageToggle: document.getElementById('auto-image-toggle'),
+                fetchBtn: document.getElementById('fetch-images-btn'),
                 itemList: document.getElementById('info-item-list'),
-                open: () => { clearTimeout(mainTimer); modal.render(); modal.element.style.display = 'flex'; },
-                close: () => { modal.element.style.display = 'none'; location.reload(); },
-                render: () => {
+                
+                open: () => { 
+                    clearTimeout(mainTimer); 
+                    modal.render(); 
+                    modal.element.style.display = 'flex'; 
+                },
+                close: () => { 
+                    modal.element.style.display = 'none';
+                    switchScreen(displayAttendance); 
+                },
+                render: (list = config.infoContentList) => {
                     modal.attendanceDurationInput.value = config.attendanceDuration / 1000;
                     modal.infoDurationInput.value = config.infoItemDuration / 1000;
-                    modal.autoImageToggle.checked = config.autoPlayImages;
                     modal.itemList.innerHTML = '';
-                    // 모달에는 항상 수동 목록만 표시
-                    config.manualContentList.forEach((item, index) => {
+                    list.forEach((item, index) => {
                         modal.itemList.appendChild(modal.createItemElement(item, index));
                     });
                 },
@@ -213,88 +185,119 @@
                     const type = item.type;
                     let mainInputHTML = '';
                     if (type === 'text') {
-                        mainInputHTML = `<textarea placeholder="내용 입력... (줄바꿈 가능)">${item.value}</textarea>`;
-                    } else { // 이미지와 웹페이지는 동일한 input 사용
+                        mainInputHTML = `<textarea placeholder="내용 입력...">${item.value}</textarea>`;
+                    } else {
                         mainInputHTML = `<input type="text" value="${item.value}" placeholder="주소(URL) 입력">`;
                     }
                     div.innerHTML = `
                         <div class="item-controls">
-                            <select class="item-type-select" data-index="${index}">
+                            <select class="item-type-select">
                                 <option value="text" ${type === 'text' ? 'selected' : ''}>텍스트</option>
                                 <option value="image" ${type === 'image' ? 'selected' : ''}>이미지</option>
                                 <option value="webpage" ${type === 'webpage' ? 'selected' : ''}>웹페이지</option>
                             </select>
                             <div class="item-main-input">${mainInputHTML}</div>
-                            <button class="delete-item-btn" data-index="${index}">X</button>
+                            <button class="delete-item-btn">X</button>
                         </div>
-                        ${type === 'text' ? `<div class="text-options"><label>글자 크기(vw):</label><input type="number" class="font-size-input" value="${item.fontSize || ''}" min="1" max="20" step="0.5" placeholder="기본"></div>` : ''}
+                        ${type === 'text' ? `<div class="text-options"><label>글자 크기(vw):</label><input type="number" class="font-size-input" value="${item.fontSize || ''}" placeholder="기본"></div>` : ''}
                     `;
                     return div;
                 },
                 addItem: () => {
-                    config.manualContentList.push({ type: 'text', value: '', fontSize: '' });
-                    modal.render();
+                    const newItem = modal.createItemElement({ type: 'text', value: '', fontSize: '' });
+                    modal.itemList.appendChild(newItem);
                 },
-                deleteItem: (index) => {
-                    config.manualContentList.splice(index, 1);
-                    modal.render();
+                deleteItem: (btn) => {
+                    btn.closest('.info-item').remove();
                 },
+                // ✨ GitHub에서 이미지 목록을 가져와 현재 목록에 추가하는 기능
+                fetchAndAppendImages: async () => {
+                    modal.fetchBtn.textContent = '불러오는 중...';
+                    modal.fetchBtn.disabled = true;
+
+                    const user = 'jungsan21-dot';
+                    const repo = 'v480';
+                    const path = 'images';
+                    const apiUrl = `https://api.github.com/repos/${user}/${repo}/contents/${path}`;
+
+                    try {
+                        const response = await fetch(apiUrl);
+                        if (!response.ok) throw new Error('GitHub API 로드 실패');
+                        const files = await response.json();
+                        
+                        const repoImages = files
+                            .filter(file => /\.(jpe?g|png|gif)$/i.test(file.name))
+                            .map(file => ({ type: 'image', value: file.download_url }));
+
+                        repoImages.forEach(imgItem => {
+                            const newItemEl = modal.createItemElement(imgItem);
+                            modal.itemList.appendChild(newItemEl);
+                        });
+
+                    } catch (error) {
+                        console.error(error);
+                        alert('GitHub에서 이미지 목록을 가져오는 데 실패했습니다. API 사용량 제한일 수 있습니다.');
+                    } finally {
+                        modal.fetchBtn.textContent = 'GitHub에서 이미지 목록 새로고침 🔄';
+                        modal.fetchBtn.disabled = false;
+                    }
+                },
+                // ✨ 저장 기능: 현재 편집중인 목록 전체를 저장
                 save: () => {
-                    const manualContentList = [];
+                    const newContentList = [];
                     const items = modal.itemList.querySelectorAll('.info-item');
                     items.forEach(itemEl => {
                         const type = itemEl.querySelector('.item-type-select').value;
                         const value = itemEl.querySelector('.item-main-input > *').value.trim();
                         if (value) {
                             const newItem = { type, value };
-                            if (type === 'text') { newItem.fontSize = itemEl.querySelector('.font-size-input').value; }
-                            manualContentList.push(newItem);
+                            if (type === 'text') {
+                                newItem.fontSize = itemEl.querySelector('.font-size-input').value;
+                            }
+                            newContentList.push(newItem);
                         }
                     });
 
                     const newConfig = {
                         attendanceDuration: parseInt(modal.attendanceDurationInput.value, 10) * 1000,
                         infoItemDuration: parseInt(modal.infoDurationInput.value, 10) * 1000,
-                        autoPlayImages: modal.autoImageToggle.checked,
-                        manualContentList: manualContentList // 수정한 수동 목록만 저장
+                        infoContentList: newContentList
                     };
                     
                     localStorage.setItem('libraryDisplayData', JSON.stringify(newConfig));
-                    alert('설정이 저장되었습니다. 페이지를 새로고침합니다.');
-                    location.reload();
+                    alert('설정이 저장되었습니다.');
+                    modal.close(); // 저장 후 새로고침 대신 모달을 닫고 바로 반영
+                    location.reload(); // 안정적인 반영을 위해 새로고침 유지
                 }
             };
             
+            // 이벤트 리스너 설정
             manageInfoBtn.addEventListener('click', modal.open);
             document.getElementById('modal-close-btn').addEventListener('click', modal.close);
             document.getElementById('modal-save-btn').addEventListener('click', modal.save);
             document.getElementById('add-item-btn').addEventListener('click', modal.addItem);
+            modal.fetchBtn.addEventListener('click', modal.fetchAndAppendImages);
             goToAttendanceBtn.addEventListener('click', () => switchScreen(displayAttendance));
+            
             modal.itemList.addEventListener('change', (e) => {
                 if (e.target.classList.contains('item-type-select')) {
-                    const index = parseInt(e.target.dataset.index, 10);
-                    config.manualContentList[index].type = e.target.value;
-                    modal.render();
+                    const itemEl = e.target.closest('.info-item');
+                    const type = e.target.value;
+                    const value = itemEl.querySelector('.item-main-input > *').value;
+                    const fontSize = (type === 'text') ? itemEl.querySelector('.font-size-input')?.value || '' : undefined;
+                    
+                    const newItemEl = modal.createItemElement({ type, value, fontSize });
+                    itemEl.replaceWith(newItemEl);
                 }
             });
             modal.itemList.addEventListener('click', (e) => {
                 if (e.target.classList.contains('delete-item-btn')) {
-                    modal.deleteItem(parseInt(e.target.dataset.index, 10));
+                    modal.deleteItem(e.target);
                 }
             });
 
-            // --- 프로그램 시작 로직 최종 수정 ---
+            // 프로그램 시작
             loadDataFromStorage();
-            
-            let finalContentList = [...config.manualContentList]; // 최종 목록은 수동 목록으로 시작
-            
-            if (config.autoPlayImages) {
-                const repoImages = await fetchImagesFromRepo();
-                finalContentList = [...finalContentList, ...repoImages]; // 자동 목록을 뒤에 추가
-            }
-            
-            config.infoContentList = finalContentList; // 실제로 화면에 표시될 최종 목록 설정
-            
             switchScreen(displayAttendance);
         });
     </script>
