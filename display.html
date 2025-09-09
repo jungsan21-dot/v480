@@ -80,8 +80,7 @@
         </div>
     </div>
     
-     <script>
-        // ✨ async 키워드 추가: 비동기 작업을 위함
+    <script>
         document.addEventListener('DOMContentLoaded', async () => { 
             const attendanceScreen = document.getElementById('attendance-screen');
             const infoScreen = document.getElementById('info-screen');
@@ -92,10 +91,11 @@
             let config = {
                 attendanceDuration: 30000,
                 infoItemDuration: 10000,
-                infoContentList: [
+                infoContentList: [], // ✨ 초기 목록은 비워둠
+                manualContentList: [ // ✨ 수동 목록을 별도로 관리
                     { type: 'text', value: '📚 수동으로 추가한 콘텐츠 예시입니다.', fontSize: '5' }
                 ],
-                autoPlayImages: true // ✨ 자동 재생 기능 기본값 (true: 켜기)
+                autoPlayImages: true
             };
 
             let mainTimer = null;
@@ -115,9 +115,7 @@
                 }
             });
 
-            // ✨ GitHub API를 통해 images 폴더의 파일 목록을 가져오는 새 함수
             async function fetchImagesFromRepo() {
-                // 본인의 GitHub 사용자이름과 저장소 이름으로 변경해야 할 수 있습니다.
                 const user = 'jungsan21-dot';
                 const repo = 'v480';
                 const path = 'images';
@@ -125,34 +123,28 @@
 
                 try {
                     const response = await fetch(apiUrl);
-                    if (!response.ok) {
-                        throw new Error('GitHub API에서 파일 목록을 가져오는데 실패했습니다.');
-                    }
+                    if (!response.ok) throw new Error('GitHub API 로드 실패');
                     const files = await response.json();
-                    
-                    // 이미지 파일(.jpg, .jpeg, .png, .gif)만 필터링
                     return files
                         .filter(file => /\.(jpe?g|png|gif)$/i.test(file.name))
-                        .map(file => ({
-                            type: 'image',
-                            value: file.download_url // 원본 이미지 주소 사용
-                        }));
+                        .map(file => ({ type: 'image', value: file.download_url }));
                 } catch (error) {
                     console.error(error);
-                    // 에러 발생 시 빈 배열 반환
                     return [];
                 }
             }
-
+            
+            // ✨ 데이터 로딩 로직 수정
             function loadDataFromStorage() {
                 const storedData = localStorage.getItem('libraryDisplayData');
                 if (storedData) {
                     const parsedData = JSON.parse(storedData);
                     config.attendanceDuration = parsedData.attendanceDuration || 30000;
                     config.infoItemDuration = parsedData.infoItemDuration || 10000;
-                    config.autoPlayImages = parsedData.autoPlayImages !== false; // 저장된 값이 false가 아니면 true
-                    if (parsedData.infoContentList) { // 빈 목록도 저장 가능하도록 수정
-                        config.infoContentList = parsedData.infoContentList;
+                    config.autoPlayImages = parsedData.autoPlayImages !== false;
+                    // 수동 목록만 불러와서 저장
+                    if (parsedData.manualContentList) {
+                        config.manualContentList = parsedData.manualContentList;
                     }
                 }
             }
@@ -173,6 +165,7 @@
 
             function displayNextInfoItem() {
                 if (isPausedByIframe) return;
+                // ✨ 최종 콘텐츠 목록(infoContentList)을 사용
                 if (config.infoContentList.length === 0) {
                     switchScreen(displayAttendance); return;
                 }
@@ -183,9 +176,7 @@
                     p.innerHTML = item.value.replace(/\n/g, '<br>');
                     infoContent.innerHTML = ''; infoContent.appendChild(p);
                 } else if (item.type === 'image') {
-                    let imageUrl = item.value;
-                    if (!imageUrl.startsWith('http')) { imageUrl = 'images/' + imageUrl; }
-                    infoContent.innerHTML = `<img src="${imageUrl}" alt="정보 이미지">`;
+                    infoContent.innerHTML = `<img src="${item.value}" alt="정보 이미지">`;
                 } else if (item.type === 'webpage') {
                     infoContent.innerHTML = `<iframe src="${item.value}"></iframe>`;
                 }
@@ -197,36 +188,34 @@
                 mainTimer = setTimeout(() => switchScreen(nextAction), currentDuration);
             }
 
+            // ✨ 모달 로직 전체 수정
             const modal = {
                 element: document.getElementById('admin-modal'),
                 attendanceDurationInput: document.getElementById('attendance-duration-input'),
                 infoDurationInput: document.getElementById('info-duration-input'),
-                autoImageToggle: document.getElementById('auto-image-toggle'), // ✨ 체크박스 요소 추가
+                autoImageToggle: document.getElementById('auto-image-toggle'),
                 itemList: document.getElementById('info-item-list'),
                 open: () => { clearTimeout(mainTimer); modal.render(); modal.element.style.display = 'flex'; },
-                close: () => { modal.element.style.display = 'none'; location.reload(); }, // ✨ 닫을 때 새로고침으로 변경
+                close: () => { modal.element.style.display = 'none'; location.reload(); },
                 render: () => {
                     modal.attendanceDurationInput.value = config.attendanceDuration / 1000;
                     modal.infoDurationInput.value = config.infoItemDuration / 1000;
-                    modal.autoImageToggle.checked = config.autoPlayImages; // ✨ 체크박스 상태 반영
+                    modal.autoImageToggle.checked = config.autoPlayImages;
                     modal.itemList.innerHTML = '';
-                    // ✨ 자동 추가된 이미지를 제외한, 수동 추가 목록만 표시
-                    const manualList = JSON.parse(localStorage.getItem('libraryDisplayData') || '{}').infoContentList || [];
-                    manualList.forEach((item, index) => {
+                    // 모달에는 항상 수동 목록만 표시
+                    config.manualContentList.forEach((item, index) => {
                         modal.itemList.appendChild(modal.createItemElement(item, index));
                     });
                 },
-                createItemElement: (item, index) => { /* 이전과 동일 */ 
+                createItemElement: (item, index) => {
                     const div = document.createElement('div');
                     div.className = 'info-item';
                     const type = item.type;
                     let mainInputHTML = '';
                     if (type === 'text') {
                         mainInputHTML = `<textarea placeholder="내용 입력... (줄바꿈 가능)">${item.value}</textarea>`;
-                    } else if (type === 'image') {
-                        mainInputHTML = `<input type="text" value="${item.value}" placeholder="이미지 주소 입력">`;
-                    } else if (type === 'webpage') {
-                        mainInputHTML = `<input type="text" value="${item.value}" placeholder="웹페이지 주소(URL) 입력">`;
+                    } else { // 이미지와 웹페이지는 동일한 input 사용
+                        mainInputHTML = `<input type="text" value="${item.value}" placeholder="주소(URL) 입력">`;
                     }
                     div.innerHTML = `
                         <div class="item-controls">
@@ -243,37 +232,33 @@
                     return div;
                 },
                 addItem: () => {
-                    const manualList = JSON.parse(localStorage.getItem('libraryDisplayData') || '{}').infoContentList || [];
-                    manualList.push({ type: 'text', value: '', fontSize: '' });
-                    const newConfig = { ...config, infoContentList: manualList };
-                    localStorage.setItem('libraryDisplayData', JSON.stringify(newConfig));
+                    config.manualContentList.push({ type: 'text', value: '', fontSize: '' });
                     modal.render();
                 },
                 deleteItem: (index) => {
-                    const manualList = JSON.parse(localStorage.getItem('libraryDisplayData') || '{}').infoContentList || [];
-                    manualList.splice(index, 1);
-                    const newConfig = { ...config, infoContentList: manualList };
-                    localStorage.setItem('libraryDisplayData', JSON.stringify(newConfig));
+                    config.manualContentList.splice(index, 1);
                     modal.render();
                 },
                 save: () => {
-                    const newConfig = {
-                        attendanceDuration: parseInt(modal.attendanceDurationInput.value, 10) * 1000,
-                        infoItemDuration: parseInt(modal.infoDurationInput.value, 10) * 1000,
-                        autoPlayImages: modal.autoImageToggle.checked, // ✨ 체크박스 상태 저장
-                        infoContentList: [] // 수동 목록만 저장
-                    };
+                    const manualContentList = [];
                     const items = modal.itemList.querySelectorAll('.info-item');
                     items.forEach(itemEl => {
                         const type = itemEl.querySelector('.item-type-select').value;
-                        let value = itemEl.querySelector('.item-main-input > *').value.trim();
-                        if (type === 'image' && value.startsWith('images/')) { value = value.substring(7); }
+                        const value = itemEl.querySelector('.item-main-input > *').value.trim();
                         if (value) {
                             const newItem = { type, value };
                             if (type === 'text') { newItem.fontSize = itemEl.querySelector('.font-size-input').value; }
-                            newConfig.infoContentList.push(newItem);
+                            manualContentList.push(newItem);
                         }
                     });
+
+                    const newConfig = {
+                        attendanceDuration: parseInt(modal.attendanceDurationInput.value, 10) * 1000,
+                        infoItemDuration: parseInt(modal.infoDurationInput.value, 10) * 1000,
+                        autoPlayImages: modal.autoImageToggle.checked,
+                        manualContentList: manualContentList // 수정한 수동 목록만 저장
+                    };
+                    
                     localStorage.setItem('libraryDisplayData', JSON.stringify(newConfig));
                     alert('설정이 저장되었습니다. 페이지를 새로고침합니다.');
                     location.reload();
@@ -288,8 +273,8 @@
             modal.itemList.addEventListener('change', (e) => {
                 if (e.target.classList.contains('item-type-select')) {
                     const index = parseInt(e.target.dataset.index, 10);
-                    // This part requires more complex state management, simplifying for now.
-                    // A full implementation would update a temporary state before saving.
+                    config.manualContentList[index].type = e.target.value;
+                    modal.render();
                 }
             });
             modal.itemList.addEventListener('click', (e) => {
@@ -298,20 +283,20 @@
                 }
             });
 
-            // --- ✨ 프로그램 시작 로직 변경 ---
+            // --- 프로그램 시작 로직 최종 수정 ---
             loadDataFromStorage();
             
-            // 자동 재생이 켜져 있으면, GitHub에서 이미지 목록을 가져와 기존 목록에 추가
+            let finalContentList = [...config.manualContentList]; // 최종 목록은 수동 목록으로 시작
+            
             if (config.autoPlayImages) {
                 const repoImages = await fetchImagesFromRepo();
-                // 수동 목록 뒤에 자동 목록을 붙임
-                config.infoContentList = [...config.infoContentList, ...repoImages];
+                finalContentList = [...finalContentList, ...repoImages]; // 자동 목록을 뒤에 추가
             }
+            
+            config.infoContentList = finalContentList; // 실제로 화면에 표시될 최종 목록 설정
             
             switchScreen(displayAttendance);
         });
     </script>
 </body>
 </html>
-
-
