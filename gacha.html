@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <title>꽝 없는 뽑기 기계</title>
     <style>
-       /* ✨ 1. 새로 업로드한 폰트 파일을 직접 등록 */
+       /* 1. 새로 업로드한 폰트 파일을 직접 등록 */
         @font-face {
             font-family: 'modu'; /* 앞으로 이 폰트를 부를 이름 */
-            src: url('fonts/modu.woff') format('woff'); /* 폰트 파일 경로 */
+            src: url('fonts/modu.woff2') format('woff2'); /* 폰트 파일 경로 */
         }
         /* 기본 스타일 */
         body, html {
@@ -16,7 +16,7 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
-            /* ✨ 2. 페이지의 기본 폰트를 'modu'로 변경 */
+            /* 2. 페이지의 기본 폰트를 'modu'로 변경 */
             font-family: 'modu', sans-serif;
             background-color: #f0f4f8;
             display: flex;
@@ -50,6 +50,8 @@
         }
 
         .gacha-button {
+            /* ✨ 버튼에 폰트 적용 */
+            font-family: 'modu', sans-serif;
             font-weight: 700;
             color: #fff;
             border: none;
@@ -153,12 +155,20 @@
         #edit-prizes-modal h2 { margin-top: 0; }
         #prize-list { overflow-y: auto; flex-grow: 1; border: 1px solid #ccc; border-radius: 8px; margin: 10px 0; }
         .prize-item { display: flex; gap: 10px; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
-        .prize-item input { padding: 8px; border: 1px solid #ccc; border-radius: 5px; font-size: 16px; }
+        .prize-item input {
+            /* ✨ 입력창에 폰트 적용 */
+            font-family: 'modu', sans-serif;
+            padding: 8px; border: 1px solid #ccc; border-radius: 5px; font-size: 16px;
+        }
         .prize-item input[type=text] { flex-grow: 1; }
         .prize-item input[type=number] { width: 80px; text-align: center; }
         .delete-prize-btn { background-color: #e53e3e; color: #fff; border: none; border-radius: 50%; width: 30px; height: 30px; font-weight: 700; cursor: pointer; flex-shrink: 0; }
         .modal-buttons { margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px; }
-        .modal-buttons button { padding: 10px 20px; border-radius: 8px; border: none; color: #fff; cursor: pointer; font-weight: bold; }
+        .modal-buttons button {
+            /* ✨ 모달 안 버튼에 폰트 적용 */
+            font-family: 'modu', sans-serif;
+            padding: 10px 20px; border-radius: 8px; border: none; color: #fff; cursor: pointer; font-weight: bold;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/tone@14.7.58/build/Tone.js"></script>
 </head>
