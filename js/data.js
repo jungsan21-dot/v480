@@ -3,7 +3,7 @@ const App = {};
 
 // 데이터 관리 모듈
 App.Data = (function() {
-    const APP_VERSION = "4.8.0";
+    const APP_VERSION = "4.8.1";
     
     // 앱의 모든 상태를 관리하는 객체
     let state = {
@@ -66,4 +66,5 @@ App.Data = (function() {
         getCurrentDate
     };
 })();
+
 // 마지막에 있던 불필요한 '}'를 제거했습니다.
