@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>꽝 없는 뽑기 기계</title>
     <style>
-       @font-face {
+        @font-face {
             font-family: 'GangwonEducationModuche';
             src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2201-2@1.0/GangwonEdu_OTFLightA.woff') format('woff');
             font-weight: 300;
@@ -17,14 +17,13 @@
             font-weight: 700;
             font-display: swap;
         }
-        /* 기본 스타일 */
+        
         body, html {
             margin: 0;
             padding: 0;
             width: 100%;
             height: 100%;
             overflow: hidden;
-            /* 2. 페이지의 기본 폰트를 'GangwonEducationModuche'로 변경 */
             font-family: 'GangwonEducationModuche', sans-serif;
             background-color: #f0f4f8;
             display: flex;
@@ -32,7 +31,6 @@
             align-items: center;
         }
 
-        /* 메인 컨테이너: 배경 이미지 적용 */
         .gacha-container {
             width: 100%;
             height: 100%;
@@ -49,16 +47,14 @@
             background-repeat: no-repeat;
         }
         
-        /* 버튼을 담는 컨테이너 위치 조정 */
         .controls {
             position: absolute;
             bottom: 10%;
             width: 100%;
-            height: 80px; /* 버튼 높이를 고려한 공간 확보 */
+            height: 80px; 
         }
 
         .gacha-button {
-            /* ✨ 버튼에 폰트 적용 */
             font-family: 'GangwonEducationModuche', sans-serif;
             font-weight: 700;
             color: #fff;
@@ -68,10 +64,10 @@
             transition: all .2s;
             box-shadow: 0 6px 8px rgba(0, 0, 0, .2);
             text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
-            position: absolute; /* 개별 위치 지정을 위해 absolute 사용 */
+            position: absolute;
         }
         .gacha-button:hover:not(:disabled) {
-            transform: translateY(-3px) scale(1.02); /* 확대 효과 추가 */
+            transform: translateY(-3px) scale(1.02);
             box-shadow: 0 8px 12px rgba(0, 0, 0, .3);
         }
         .gacha-button:disabled {
@@ -80,17 +76,15 @@
             box-shadow: none;
         }
 
-        /* 뽑기 버튼: 크기 키우고 중앙 정렬 */
         #gacha-button { 
             background-color: #d9534f;
             padding: 2vh 5vw;
-            font-size: clamp(2em, 5vh, 3.5em);
+            font-size: clamp(3em, 7vh, 4em);
             left: 50%;
             bottom: 0;
-            transform: translateX(-50%); /* 정확한 중앙 정렬 */
+            transform: translateX(-50%);
         }
         
-        /* 선물 편집 버튼: 크기 줄이고 우측 하단으로 이동 */
         #edit-prizes-button { 
             background-color: #f0ad4e;
             padding: 1vh 2vw;
@@ -99,7 +93,6 @@
             bottom: 0;
         }
 
-        /* 뽑기 공 스타일 개선 */
         #gacha-ball {
             position: absolute;
             left: 50%;
@@ -118,17 +111,15 @@
             box-sizing: border-box;
             cursor: pointer;
             z-index: 100;
-            border: 6px solid #A52A2A; /* 진한 갈색 테두리 */
+            border: 6px solid #A52A2A;
             flex-direction: column;
         }
         
-        /* 아이콘 스타일 추가 */
         .prize-icon {
             font-size: clamp(1.5em, 6vmin, 3em);
             line-height: 1;
         }
         
-        /* 뽑기 공 내부 텍스트 스타일 개선 */
         #gacha-ball p {
             margin: 10px 0;
             font-size: clamp(1.32em, 5.5vmin, 2.75em); 
@@ -142,7 +133,9 @@
             100% { top: 50%; transform: translate(-50%, -50%) scale(1); opacity: 1; }
         }
         .animate-ball {
-            animation: fall-and-reveal 3s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards;
+            animation-name: fall-and-reveal;
+            animation-timing-function: cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            animation-fill-mode: forwards;
         }
 
         @keyframes fadeInContent {
@@ -154,40 +147,30 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            animation: fadeInContent 1s ease-out forwards;
+            animation-name: fadeInContent;
+            animation-timing-function: ease-out;
+            animation-fill-mode: forwards;
         }
 
-        /* 편집 모달 스타일 */
         #edit-prizes-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, .6); z-index: 2000; justify-content: center; align-items: center; }
         #edit-prizes-modal .modal-content { background: #fff; padding: 25px; border-radius: 15px; width: 90%; max-width: 600px; text-align: left; max-height: 85vh; display: flex; flex-direction: column; }
         #edit-prizes-modal h2 { margin-top: 0; }
         #prize-list { overflow-y: auto; flex-grow: 1; border: 1px solid #ccc; border-radius: 8px; margin: 10px 0; }
         .prize-item { display: flex; gap: 10px; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
-        .prize-item input {
-            /* ✨ 입력창에 폰트 적용 */
-            font-family: 'GangwonEducationModuche', sans-serif;
-            padding: 8px; border: 1px solid #ccc; border-radius: 5px; font-size: 16px;
-        }
+        .prize-item input { padding: 8px; border: 1px solid #ccc; border-radius: 5px; font-size: 16px; font-family: 'GangwonEducationModuche', sans-serif; }
         .prize-item input[type=text] { flex-grow: 1; }
         .prize-item input[type=number] { width: 80px; text-align: center; }
         .delete-prize-btn { background-color: #e53e3e; color: #fff; border: none; border-radius: 50%; width: 30px; height: 30px; font-weight: 700; cursor: pointer; flex-shrink: 0; }
         .modal-buttons { margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px; }
-        .modal-buttons button {
-            /* ✨ 모달 안 버튼에 폰트 적용 */
-            font-family: 'GangwonEducationModuche', sans-serif;
-            padding: 10px 20px; border-radius: 8px; border: none; color: #fff; cursor: pointer; font-weight: bold;
-        }
+        .modal-buttons button { padding: 10px 20px; border-radius: 8px; border: none; color: #fff; cursor: pointer; font-weight: bold; font-family: 'GangwonEducationModuche', sans-serif;}
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/tone@14.7.58/build/Tone.js"></script>
 </head>
 <body>
     <div class="gacha-container">
-        
         <div class="controls">
             <button id="gacha-button" class="gacha-button">뽑기!</button>
             <button id="edit-prizes-button" class="gacha-button">선물 편집</button>
         </div>
-        
         <div id="gacha-ball"></div>
     </div>
 
@@ -205,19 +188,30 @@
     <script>
         let items = [];
         const defaultItems = [
-            { name: '비쵸비 2개', quantity: 15 },
-            { name: '고오급 샤프', quantity: 10 }, 
-            { name: '새콤달콤', quantity: 10 },
-            { name: '빼빼로', quantity: 10 }, 
-            { name: '카피바라 키링', quantity: 10 },
-            { name: '고오급 볼펜', quantity: 5 },
-            { name: '아무거나', quantity: 5 }
+            { name: '빼빼로', quantity: 5 }, { name: '비쵸비 2개', quantity: 5 }, 
+            { name: '새콤달콤', quantity: 5 }, { name: '카피바라 키링', quantity: 5 }, 
+            { name: '고오급 샤프', quantity: 5 }, { name: '고오급 볼펜', quantity: 5 }, { name: '아무거나', quantity: 7 }
         ];
-        
         const ballColors = ['#ff5662', '#ffb833', '#40b5a7', '#3d6170', '#c0f2f4'];
         
-        const synth = new Tone.NoiseSynth({ noise: { type: "brown" }, envelope: { attack: .02, decay: .2, sustain: .05 } }).toDestination();
-        
+        const sounds = {
+            buttonPress: new Audio('https://cdn.pixabay.com/audio/2025/05/31/audio_2895d0eabb.mp3'),
+            ballRolling: new Audio('https://cdn.pixabay.com/audio/2024/07/30/audio_65c652a871.mp3'),
+            prizeReveal: new Audio('https://cdn.pixabay.com/audio/2024/11/24/audio_caf639ccd1.mp3')
+        };
+
+        let soundDurations = { ballRolling: 3000, prizeReveal: 1500 };
+
+        Object.keys(sounds).forEach(key => {
+            const audio = sounds[key];
+            audio.addEventListener('loadedmetadata', () => {
+                if(soundDurations[key] !== undefined) {
+                    soundDurations[key] = audio.duration * 1000;
+                    console.log(`${key} 효과음 길이:`, soundDurations[key], 'ms');
+                }
+            });
+        });
+
         const ball = document.getElementById('gacha-ball');
         const button = document.getElementById('gacha-button');
         const editPrizesModal = document.getElementById('edit-prizes-modal');
@@ -254,43 +248,55 @@
             isAnimating = true;
             button.disabled = true;
 
-            await Tone.start();
-            synth.triggerAttackRelease("3s");
-            
-            const prizePool = [];
-            items.forEach(item => {
-                for (let i = 0; i < item.quantity; i++) { prizePool.push(item.name); }
-            });
-            if (prizePool.length === 0) { isAnimating = false; checkGachaAvailability(); return; }
-            const selectedItemName = prizePool[Math.floor(Math.random() * prizePool.length)];
-            const selectedItem = items.find(item => item.name === selectedItemName);
+            // 1. 버튼 클릭 효과음 재생
+            sounds.buttonPress.currentTime = 0;
+            sounds.buttonPress.play();
 
-            ball.style.backgroundColor = ballColors[Math.floor(Math.random() * ballColors.length)];
-            ball.innerHTML = '';
-            ball.style.display = 'flex';
-            ball.classList.remove('animate-ball');
-            void ball.offsetWidth;
-            ball.classList.add('animate-ball');
-
+            // ✨ 2초 지연을 추가합니다.
             setTimeout(() => {
-                if (selectedItem) {
-                    selectedItem.quantity--;
-                    saveItems();
-                }
-                ball.innerHTML = `
-                    <div class="prize-content">
-                        <span class="prize-icon">🎁</span>
-                        <p>${selectedItemName}</p>
-                        <span class="prize-icon">🎉</span>
-                    </div>
-                `;
-                const textColor = getContrastColor(ball.style.backgroundColor);
-                ball.querySelector('.prize-content').style.color = textColor;
+                const prizePool = [];
+                items.forEach(item => { for (let i = 0; i < item.quantity; i++) { prizePool.push(item.name); } });
+                if (prizePool.length === 0) { isAnimating = false; checkGachaAvailability(); return; }
+                const selectedItemName = prizePool[Math.floor(Math.random() * prizePool.length)];
+                const selectedItem = items.find(item => item.name === selectedItemName);
+                
+                ball.style.backgroundColor = ballColors[Math.floor(Math.random() * ballColors.length)];
+                ball.innerHTML = '';
+                ball.style.display = 'flex';
+                ball.classList.remove('animate-ball');
+                void ball.offsetWidth;
+
+                ball.style.animationDuration = `${soundDurations.ballRolling / 1000}s`;
+                ball.classList.add('animate-ball');
+                sounds.ballRolling.currentTime = 0;
+                sounds.ballRolling.play();
+
                 setTimeout(() => {
-                    isAnimating = false;
-                    checkGachaAvailability();
-                }, 1500);
-            }, 3000);
+                    if (selectedItem) {
+                        selectedItem.quantity--;
+                        saveItems();
+                    }
+                    
+                    sounds.prizeReveal.currentTime = 0;
+                    sounds.prizeReveal.play();
+
+                    ball.innerHTML = `<div class="prize-content" style="animation-duration: ${soundDurations.prizeReveal / 1000}s">
+                                        <span class="prize-icon">🎁</span>
+                                        <p>${selectedItemName}</p>
+                                        <span class="prize-icon">🎉</span>
+                                     </div>`;
+                    
+                    const textColor = getContrastColor(ball.style.backgroundColor);
+                    ball.querySelector('.prize-content').style.color = textColor;
+
+                    setTimeout(() => {
+                        isAnimating = false;
+                        checkGachaAvailability();
+                    }, soundDurations.prizeReveal);
+
+                }, soundDurations.ballRolling);
+
+            }, 2000); // 2000ms = 2초
         }
         
         function renderPrizeEditor() {
@@ -309,6 +315,7 @@
                 <button class="delete-prize-btn">X</button>
             `;
             prizeListContainer.appendChild(itemDiv);
+            
             itemDiv.querySelector('.delete-prize-btn').addEventListener('click', (e) => {
                 e.target.closest('.prize-item').remove();
             });
@@ -332,6 +339,7 @@
                     newItems.push({ name, quantity });
                 }
             });
+            
             if (newItems.length > 0) {
                 items = newItems;
                 saveItems();
@@ -359,7 +367,4 @@
     </script>
 </body>
 </html>
-
-
-
 
