@@ -4,10 +4,18 @@
     <meta charset="UTF-8">
     <title>꽝 없는 뽑기 기계</title>
     <style>
-       /* 1. 새로 업로드한 폰트 파일을 직접 등록 */
+       @font-face {
+            font-family: 'GangwonEducationModuche';
+            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2201-2@1.0/GangwonEdu_OTFLightA.woff') format('woff');
+            font-weight: 300;
+            font-display: swap;
+        }
+
         @font-face {
-            font-family: 'modu'; /* 앞으로 이 폰트를 부를 이름 */
-            src: url('fonts/modu.woff') format('woff'); /* 폰트 파일 경로 */
+            font-family: 'GangwonEducationModuche';
+            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2201-2@1.0/GangwonEdu_OTFBoldA.woff') format('woff');
+            font-weight: 700;
+            font-display: swap;
         }
         /* 기본 스타일 */
         body, html {
@@ -16,8 +24,8 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
-            /* 2. 페이지의 기본 폰트를 'modu'로 변경 */
-            font-family: 'modu', sans-serif;
+            /* 2. 페이지의 기본 폰트를 'GangwonEducationModuche'로 변경 */
+            font-family: 'GangwonEducationModuche', sans-serif;
             background-color: #f0f4f8;
             display: flex;
             justify-content: center;
@@ -51,7 +59,7 @@
 
         .gacha-button {
             /* ✨ 버튼에 폰트 적용 */
-            font-family: 'modu', sans-serif;
+            font-family: 'GangwonEducationModuche', sans-serif;
             font-weight: 700;
             color: #fff;
             border: none;
@@ -157,7 +165,7 @@
         .prize-item { display: flex; gap: 10px; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
         .prize-item input {
             /* ✨ 입력창에 폰트 적용 */
-            font-family: 'modu', sans-serif;
+            font-family: 'GangwonEducationModuche', sans-serif;
             padding: 8px; border: 1px solid #ccc; border-radius: 5px; font-size: 16px;
         }
         .prize-item input[type=text] { flex-grow: 1; }
@@ -166,7 +174,7 @@
         .modal-buttons { margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px; }
         .modal-buttons button {
             /* ✨ 모달 안 버튼에 폰트 적용 */
-            font-family: 'modu', sans-serif;
+            font-family: 'GangwonEducationModuche', sans-serif;
             padding: 10px 20px; border-radius: 8px; border: none; color: #fff; cursor: pointer; font-weight: bold;
         }
     </style>
@@ -351,6 +359,7 @@
     </script>
 </body>
 </html>
+
 
 
 
