@@ -40,12 +40,10 @@
         #info-content p { font-weight: bold; padding: 2vw; margin: 0; }
         #info-content iframe { width: 100%; height: 100%; border: none; }
 
-        /* 3. 버튼 컨테이너가 항상 화면 위에 표시되도록 수정합니다. */
         #button-container { position: fixed; bottom: 30px; right: 30px; display: flex; gap: 15px; z-index: 1001; }
         .control-btn { padding: 12px 24px; font-size: 1.5rem; background-color: rgba(0, 0, 0, 0.6); color: white; border: 2px solid rgba(255,255,255,0.8); border-radius: 50px; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); transition: all 0.2s; }
         .control-btn:hover { background-color: rgba(0, 0, 0, 0.8); transform: scale(1.05); }
 
-        /* 모달 스타일 (비밀번호 포함) */
         .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; }
         .modal-content { background-color: #fefefe; color: #333; padding: 25px; border-radius: 15px; width: 90%; max-width: 700px; box-shadow: 0 5px 20px rgba(0,0,0,0.25); max-height: 85vh; display: flex; flex-direction: column; font-family: 'GangwonEducationModuche', sans-serif; }
         .modal-content h2, .modal-content h3 { margin-top: 0; color: #111827; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; }
@@ -65,7 +63,6 @@
         .info-item .text-options input { width: 70px; }
         .info-item .delete-item-btn { width: 40px; background-color: #ef4444; color: white; border: none; cursor: pointer; }
 
-        /* 알람 관련 스타일 */
         .alarm-item { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
         .alarm-item input[type="time"] { flex-grow: 1; }
         .alarm-item input[type="checkbox"] { width: auto; }
@@ -73,21 +70,18 @@
     </style>
 </head>
 <body>
-    <!-- 화면 영역 -->
     <div id="attendance-screen" class="screen visible"><iframe src="index.html"></iframe></div>
     <div id="info-screen" class="screen hidden"><div id="info-content"></div></div>
 
-    <!-- 3. 제어 버튼들을 iframe 바깥으로 이동 -->
     <div id="button-container">
         <button id="manage-info-btn" class="control-btn">⚙️</button>
         <button id="pause-resume-btn" class="control-btn">⏸️</button>
     </div>
 
-    <!-- 비밀번호 입력 모달 -->
     <div id="password-modal" class="modal">
         <div class="modal-content" style="max-width: 300px;">
             <h2>관리자 코드 입력</h2>
-            <input type="password" id="password-input" maxlength="4">
+            <input type="password" id="password-input" maxlength="4" autocomplete="off">
             <div class="modal-buttons">
                 <button id="password-cancel-btn" style="background-color: #6b7280; color: white;">취소</button>
                 <button id="password-confirm-btn" style="background-color: #16a34a; color: white;">확인</button>
@@ -95,7 +89,6 @@
         </div>
     </div>
 
-    <!-- 정보 화면 관리 모달 -->
     <div id="admin-modal" class="modal">
         <div class="modal-content">
              <h2>정보 화면 설정</h2>
@@ -105,7 +98,6 @@
                 <div style="flex: 1;"><label for="info-duration-input">정보 항목 표시 시간</label><input type="number" id="info-duration-input" min="1"></div>
             </div>
             
-            <!-- 4. 알람 관리 기능 추가 -->
             <h3>알람 설정</h3>
             <div id="alarm-list"></div>
             <button id="add-alarm-btn" style="background-color: #3b82f6; color: white; margin-bottom: 15px;">+ 알람 추가</button>
@@ -124,7 +116,6 @@
     
     <script>
         document.addEventListener('DOMContentLoaded', () => { 
-            // --- 1. 기본 설정 및 HTML 요소 가져오기 ---
             const attendanceScreen = document.getElementById('attendance-screen');
             const infoScreen = document.getElementById('info-screen');
             const manageInfoBtn = document.getElementById('manage-info-btn');
@@ -144,42 +135,30 @@
             let alarmCheckInterval = null;
             const alarmSound = new Audio('https://cdn.pixabay.com/audio/2022/11/17/audio_88f2d5093b.mp3');
 
-            // --- 2. 핵심 기능 함수들 ---
-
-            /**
-             * 로컬 저장소에서 설정(콘텐츠 목록, 알람 등)을 불러옵니다.
-             */
             function loadDataFromStorage() {
                 const storedData = localStorage.getItem('libraryDisplayData');
                 if (storedData) {
                     const parsedData = JSON.parse(storedData);
-                    Object.assign(config, parsedData);
+                    config.attendanceDuration = parsedData.attendanceDuration || config.attendanceDuration;
+                    config.infoItemDuration = parsedData.infoItemDuration || config.infoItemDuration;
+                    config.infoContentList = parsedData.infoContentList || config.infoContentList;
+                    config.alarms = parsedData.alarms || config.alarms;
                 }
             }
 
-            /**
-             * 현재 설정을 로컬 저장소에 저장합니다.
-             */
             function saveDataToStorage() {
                 localStorage.setItem('libraryDisplayData', JSON.stringify(config));
             }
             
-            /**
-             * 화면을 부드럽게 전환합니다.
-             * @param {function} displayFunction - 다음에 보여줄 화면을 그리는 함수
-             */
             function switchScreen(displayFunction) {
                 clearTimeout(mainTimer);
-                if (isPaused) return; // 일시정지 상태면 전환하지 않음
+                if (isPaused) return;
 
                 attendanceScreen.classList.replace('visible', 'hidden');
                 infoScreen.classList.replace('visible', 'hidden');
                 setTimeout(displayFunction, transitionDuration);
             }
 
-            /**
-             * 출석부 화면을 표시합니다.
-             */
             function displayAttendance() {
                 attendanceScreen.classList.replace('hidden', 'visible');
                 if (!isPaused) {
@@ -187,9 +166,6 @@
                 }
             }
 
-            /**
-             * 다음 정보 콘텐츠를 표시합니다.
-             */
             function displayNextInfoItem() {
                 if (isPaused) return;
                 const infoContent = document.getElementById('info-content');
@@ -197,7 +173,6 @@
                     switchScreen(displayAttendance); return;
                 }
                 const item = config.infoContentList[currentInfoIndex];
-                // 콘텐츠 종류에 따라 다르게 표시
                 if (item.type === 'text') {
                     const p = document.createElement('p');
                     if (item.fontSize) p.style.fontSize = `${item.fontSize}vw`;
@@ -211,15 +186,11 @@
                 infoScreen.classList.replace('hidden', 'visible');
                 let currentDuration = config.infoItemDuration;
                 if (item.type === 'webpage') currentDuration += 2000;
-
                 currentInfoIndex = (currentInfoIndex + 1) % config.infoContentList.length;
                 const nextAction = (currentInfoIndex === 0) ? displayAttendance : displayNextInfoItem;
                 mainTimer = setTimeout(() => switchScreen(nextAction), currentDuration);
             }
 
-            /**
-             * 일시정지/재생 상태를 토글합니다.
-             */
             function togglePause() {
                 isPaused = !isPaused;
                 if (isPaused) {
@@ -227,87 +198,106 @@
                     pauseResumeBtn.textContent = '▶️';
                 } else {
                     pauseResumeBtn.textContent = '⏸️';
-                    switchScreen(displayAttendance); // 재개 시 출석부부터 시작
+                    switchScreen(displayAttendance);
                 }
             }
 
-            // --- 4. 알람 기능 ---
-            
-            /**
-             * 1초마다 현재 시간을 확인하여 설정된 알람 시간이 되면 소리를 재생합니다.
-             */
             function startAlarmChecker() {
                 if (alarmCheckInterval) clearInterval(alarmCheckInterval);
-                const triggeredAlarms = new Set(); // 오늘 이미 울린 알람을 기록
-
+                const triggeredAlarms = new Set();
                 alarmCheckInterval = setInterval(() => {
                     const now = new Date();
                     const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-                    
-                    if (currentTime === '00:00') triggeredAlarms.clear(); // 자정이 되면 초기화
-
-                    config.alarms.forEach(alarm => {
-                        if (alarm.enabled && alarm.time === currentTime && !triggeredAlarms.has(alarm.time)) {
-                            alarmSound.currentTime = 0;
-                            alarmSound.play();
-                            triggeredAlarms.add(alarm.time);
-                        }
-                    });
+                    if (currentTime === '00:00') triggeredAlarms.clear();
+                    if(config.alarms && Array.isArray(config.alarms)) {
+                        config.alarms.forEach(alarm => {
+                            if (alarm.enabled && alarm.time === currentTime && !triggeredAlarms.has(alarm.time)) {
+                                alarmSound.currentTime = 0;
+                                alarmSound.play();
+                                triggeredAlarms.add(alarm.time);
+                            }
+                        });
+                    }
                 }, 1000);
             }
 
-            // --- 5. 관리 모달 기능 ---
             const modal = {
-                // ... (이전 코드와 유사, 알람 기능 추가)
+                adminModal: document.getElementById('admin-modal'),
+                passwordModal: document.getElementById('password-modal'),
+                
                 open: () => { 
-                    const passwordModal = document.getElementById('password-modal');
                     const passwordInput = document.getElementById('password-input');
                     passwordInput.value = '';
-                    passwordModal.style.display = 'flex';
+                    modal.passwordModal.style.display = 'flex';
                     passwordInput.focus();
                 },
+
                 openAdmin: () => {
-                    document.getElementById('password-modal').style.display = 'none';
+                    modal.passwordModal.style.display = 'none';
                     clearTimeout(mainTimer);
                     modal.render(); 
-                    document.getElementById('admin-modal').style.display = 'flex'; 
+                    modal.adminModal.style.display = 'flex'; 
                 },
+
                 close: () => { 
-                    document.getElementById('admin-modal').style.display = 'none';
+                    modal.adminModal.style.display = 'none';
                     if (!isPaused) switchScreen(displayAttendance); 
                 },
+
                 render: () => {
-                    // 타이머, 콘텐츠 목록 렌더링 (이전 코드와 동일)
                     document.getElementById('attendance-duration-input').value = config.attendanceDuration / 1000;
                     document.getElementById('info-duration-input').value = config.infoItemDuration / 1000;
+                    const alarmList = document.getElementById('alarm-list');
+                    alarmList.innerHTML = '';
+                    if(config.alarms && Array.isArray(config.alarms)){
+                        config.alarms.forEach((alarm, index) => {
+                            const div = document.createElement('div');
+                            div.className = 'alarm-item';
+                            div.innerHTML = `
+                                <input type="time" value="${alarm.time}">
+                                <label><input type="checkbox" ${alarm.enabled ? 'checked' : ''}> 활성화</label>
+                                <button class="delete-alarm-btn" data-index="${index}" style="width:auto; background-color:#ef4444;">삭제</button>
+                            `;
+                            alarmList.appendChild(div);
+                        });
+                    }
+                    
+                    // ✨ 콘텐츠 목록 렌더링 기능 복구
                     const itemList = document.getElementById('info-item-list');
                     itemList.innerHTML = '';
                     config.infoContentList.forEach(item => {
                         itemList.appendChild(modal.createItemElement(item));
                     });
-
-                    // 알람 목록 렌더링
-                    const alarmList = document.getElementById('alarm-list');
-                    alarmList.innerHTML = '';
-                    config.alarms.forEach((alarm, index) => {
-                        const div = document.createElement('div');
-                        div.className = 'alarm-item';
-                        div.innerHTML = `
-                            <input type="time" value="${alarm.time}">
-                            <label><input type="checkbox" ${alarm.enabled ? 'checked' : ''}> 활성화</label>
-                            <button class="delete-alarm-btn" data-index="${index}" style="width:auto; background-color:#ef4444;">삭제</button>
-                        `;
-                        alarmList.appendChild(div);
-                    });
                 },
-                createItemElement: (item) => { /* 이전 코드와 동일 */ return document.createElement('div'); },
+
+                createItemElement: (item) => {
+                    const div = document.createElement('div');
+                    div.className = 'info-item';
+                    const type = item.type;
+                    let mainInputHTML = '';
+                    if (type === 'text') {
+                        mainInputHTML = `<textarea placeholder="내용 입력...">${item.value}</textarea>`;
+                    } else {
+                        mainInputHTML = `<input type="text" value="${item.value}" placeholder="주소(URL) 입력">`;
+                    }
+                    div.innerHTML = `
+                        <div class="item-controls">
+                            <select class="item-type-select">
+                                <option value="text" ${type === 'text' ? 'selected' : ''}>텍스트</option>
+                                <option value="image" ${type === 'image' ? 'selected' : ''}>이미지</option>
+                                <option value="webpage" ${type === 'webpage' ? 'selected' : ''}>웹페이지</option>
+                            </select>
+                            <div class="item-main-input">${mainInputHTML}</div>
+                            <button class="delete-item-btn">X</button>
+                        </div>
+                        ${type === 'text' ? `<div class="text-options"><label>글자 크기(vw):</label><input type="number" class="font-size-input" value="${item.fontSize || ''}" placeholder="기본"></div>` : ''}
+                    `;
+                    return div;
+                },
+
                 save: () => {
-                    // 타이머, 콘텐츠 목록 저장 (이전 코드와 동일)
                     config.attendanceDuration = parseInt(document.getElementById('attendance-duration-input').value, 10) * 1000;
                     config.infoItemDuration = parseInt(document.getElementById('info-duration-input').value, 10) * 1000;
-                    // ... 콘텐츠 목록 저장 로직 ...
-
-                    // 알람 설정 저장
                     const newAlarms = [];
                     document.querySelectorAll('#alarm-list .alarm-item').forEach(el => {
                         newAlarms.push({
@@ -317,34 +307,82 @@
                     });
                     config.alarms = newAlarms;
                     
+                    // ✨ 콘텐츠 목록 저장 기능 복구
+                    const newContentList = [];
+                    document.querySelectorAll('#info-item-list .info-item').forEach(itemEl => {
+                        const type = itemEl.querySelector('.item-type-select').value;
+                        const value = itemEl.querySelector('.item-main-input > *').value.trim();
+                        if (value) {
+                            const newItem = { type, value };
+                            if (type === 'text') {
+                                newItem.fontSize = itemEl.querySelector('.font-size-input').value;
+                            }
+                            newContentList.push(newItem);
+                        }
+                    });
+                    config.infoContentList = newContentList;
+                    
                     saveDataToStorage();
                     alert('설정이 저장되었습니다.');
                     modal.close();
-                    location.reload(); // 안정적인 반영을 위해 새로고침
+                    location.reload();
                 },
-                // ... (fetchImages, addItem, deleteItem 등 이전과 동일)
+                 
+                // ✨ GitHub 이미지 불러오기 기능 수정
+                fetchAndAppendImages: async () => {
+                    const fetchBtn = document.getElementById('fetch-images-btn');
+                    fetchBtn.textContent = '불러오는 중...';
+                    fetchBtn.disabled = true;
+
+                    const user = 'jungsan21-dot';
+                    const repo = 'v480';
+                    const path = 'images';
+                    const apiUrl = `https://api.github.com/repos/${user}/${repo}/contents/${path}`;
+
+                    try {
+                        const response = await fetch(apiUrl);
+                        if (!response.ok) throw new Error('GitHub API 로드 실패');
+                        const files = await response.json();
+                        
+                        const repoImages = files
+                            .filter(file => /\.(jpe?g|png|gif)$/i.test(file.name))
+                            .map(file => ({ type: 'image', value: file.download_url }));
+
+                        // 불러온 이미지를 config에 반영하고 다시 렌더링
+                        config.infoContentList.push(...repoImages);
+                        modal.render(); 
+
+                    } catch (error) {
+                        console.error(error);
+                        alert('GitHub에서 이미지 목록을 가져오는 데 실패했습니다.');
+                    } finally {
+                        fetchBtn.textContent = 'GitHub에서 이미지 목록 새로고침 🔄';
+                        fetchBtn.disabled = false;
+                    }
+                },
+                // ✨ 콘텐츠 아이템 추가/삭제 기능 복구
+                addItem: () => {
+                    config.infoContentList.push({ type: 'text', value: '', fontSize: '' });
+                    modal.render();
+                },
+                deleteItem: (btn) => {
+                    const itemEl = btn.closest('.info-item');
+                    const index = Array.from(itemEl.parentElement.children).indexOf(itemEl);
+                    config.infoContentList.splice(index, 1);
+                    modal.render();
+                },
             };
             
-            // --- 6. 이벤트 리스너 설정 ---
             pauseResumeBtn.addEventListener('click', togglePause);
-            infoScreen.addEventListener('click', () => {
-                if (!isPaused) switchScreen(displayAttendance);
-            });
+            infoScreen.addEventListener('click', () => { if (!isPaused) switchScreen(displayAttendance); });
             manageInfoBtn.addEventListener('click', modal.open);
 
-            // 비밀번호 모달 이벤트
             document.getElementById('password-confirm-btn').onclick = () => {
-                if (document.getElementById('password-input').value === '6408') {
-                    modal.openAdmin();
-                } else {
-                    alert('코드가 일치하지 않습니다.');
-                }
+                if (document.getElementById('password-input').value === '6408') modal.openAdmin();
+                else alert('코드가 일치하지 않습니다.');
             };
-            document.getElementById('password-cancel-btn').onclick = () => {
-                document.getElementById('password-modal').style.display = 'none';
-            };
+            document.getElementById('password-cancel-btn').onclick = () => document.getElementById('password-modal').style.display = 'none';
 
-            // 관리 모달 이벤트 (알람 포함)
             document.getElementById('modal-close-btn').addEventListener('click', modal.close);
             document.getElementById('modal-save-btn').addEventListener('click', modal.save);
             document.getElementById('add-alarm-btn').onclick = () => {
@@ -357,12 +395,27 @@
                     modal.render();
                 }
             });
-            // ... (콘텐츠 관리 이벤트 리스너는 이전과 동일)
+            document.getElementById('fetch-images-btn').addEventListener('click', modal.fetchAndAppendImages);
+            document.getElementById('add-item-btn').addEventListener('click', modal.addItem);
 
-            // --- 7. 프로그램 시작 ---
+            // ✨ 타입 변경 시 렌더링 다시 하도록 수정
+            document.getElementById('info-item-list').addEventListener('change', (e) => {
+                if (e.target.classList.contains('item-type-select')) {
+                    const itemEl = e.target.closest('.info-item');
+                    const index = Array.from(itemEl.parentElement.children).indexOf(itemEl);
+                    config.infoContentList[index].type = e.target.value;
+                    modal.render();
+                }
+            });
+             document.getElementById('info-item-list').addEventListener('click', (e) => {
+                if (e.target.classList.contains('delete-item-btn')) {
+                    modal.deleteItem(e.target);
+                }
+            });
+
             loadDataFromStorage();
-            startAlarmChecker(); // 알람 체커 시작
-            switchScreen(displayAttendance); // 첫 화면 시작
+            startAlarmChecker();
+            switchScreen(displayAttendance);
         });
     </script>
 </body>
