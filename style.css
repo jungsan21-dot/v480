@@ -1,4 +1,17 @@
-@import url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_four@1.2/JalnanGothic.woff');
+/* ✨ 1. '강원교육모두체' 웹 폰트 주소를 최상단에 추가합니다. */
+@font-face {
+    font-family: 'GangwonEducationModuche';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2201-2@1.0/GangwonEdu_OTFLightA.woff') format('woff');
+    font-weight: 300;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'GangwonEducationModuche';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2201-2@1.0/GangwonEdu_OTFBoldA.woff') format('woff');
+    font-weight: 700;
+    font-display: swap;
+}
 
 @keyframes pop-in {
     0% { transform: scale(0.9); } 50% { transform: scale(1.1); } 100% { transform: scale(1); }
@@ -16,7 +29,8 @@
 }
 
 body {
-    font-family: 'JalnanGothic', 'Malgun Gothic', sans-serif;
+    /* ✨ 2. 페이지 전체의 기본 폰트를 'GangwonEducationModuche'로 변경합니다. */
+    font-family: 'GangwonEducationModuche', 'Malgun Gothic', sans-serif;
     background-color: var(--bg-color);
     margin: 0;
     color: var(--text-color);
@@ -187,7 +201,8 @@ header h1 {
 }
 .student-name-input {
     width: 90%;
-    font-family: 'JalnanGothic', 'Malgun Gothic', sans-serif;
+    /* ✨ 입력창에도 새로운 폰트 적용 */
+    font-family: 'GangwonEducationModuche', sans-serif;
     text-align: center;
     font-weight: bold;
     font-size: clamp(2.2em, 5.5vh, 3.5em);
@@ -314,3 +329,4 @@ header h1 {
     font-weight: bold;
     color: #4b5563;
 }
+
