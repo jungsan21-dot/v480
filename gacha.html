@@ -200,17 +200,9 @@
             prizeReveal: new Audio('https://cdn.pixabay.com/audio/2024/11/24/audio_caf639ccd1.mp3')
         };
 
-        let soundDurations = { ballRolling: 3000, prizeReveal: 1500 };
+        let soundDurations = { ballRolling: 5000, prizeReveal: 3500 };
 
-        Object.keys(sounds).forEach(key => {
-            const audio = sounds[key];
-            audio.addEventListener('loadedmetadata', () => {
-                if(soundDurations[key] !== undefined) {
-                    soundDurations[key] = audio.duration * 1000;
-                    console.log(`${key} 효과음 길이:`, soundDurations[key], 'ms');
-                }
-            });
-        });
+
 
         const ball = document.getElementById('gacha-ball');
         const button = document.getElementById('gacha-button');
@@ -367,4 +359,5 @@
     </script>
 </body>
 </html>
+
 
