@@ -99,7 +99,7 @@ App.UI = (function() {
             
             const giftContainer = document.createElement('div');
             giftContainer.className = 'gift-btn-container';
-            [13, 18].forEach(day => {
+            [10, 13].forEach(day => {
                 if (student.attendanceCount >= day) {
                     const giftBtn = document.createElement('button');
                     giftBtn.className = 'circular-btn gift-btn';
@@ -204,3 +204,4 @@ function updateTimeDisplay() {
     return { DOMElements, applyDesignSettings, renderStudents, renderDateDisplay, updateTimeDisplay, openGachaModal, getDragAfterElement };
 
 })();
+
