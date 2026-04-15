@@ -99,7 +99,7 @@ App.UI = (function() {
             
             const giftContainer = document.createElement('div');
             giftContainer.className = 'gift-btn-container';
-            [10, 13].forEach(day => {
+            [13, 18].forEach(day => {
                 if (student.attendanceCount >= day) {
                     const giftBtn = document.createElement('button');
                     giftBtn.className = 'circular-btn gift-btn';
